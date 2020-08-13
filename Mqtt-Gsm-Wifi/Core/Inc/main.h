@@ -60,6 +60,24 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define BTN_Pin GPIO_PIN_0
 #define BTN_GPIO_Port GPIOA
+#define MDM_SIM_SELECT_1_Pin GPIO_PIN_1
+#define MDM_SIM_SELECT_1_GPIO_Port GPIOA
+#define STMOD_INT_Pin GPIO_PIN_4
+#define STMOD_INT_GPIO_Port GPIOA
+#define MDM_PWR_EN_Pin GPIO_PIN_5
+#define MDM_PWR_EN_GPIO_Port GPIOA
+#define MDM_SIM_RST_Pin GPIO_PIN_6
+#define MDM_SIM_RST_GPIO_Port GPIOA
+#define MDM_SIM_SELECT_0_Pin GPIO_PIN_7
+#define MDM_SIM_SELECT_0_GPIO_Port GPIOA
+#define MDM_DTR_Pin GPIO_PIN_4
+#define MDM_DTR_GPIO_Port GPIOC
+#define MDM_SIM_CLK_Pin GPIO_PIN_5
+#define MDM_SIM_CLK_GPIO_Port GPIOC
+#define MDM_RST_Pin GPIO_PIN_0
+#define MDM_RST_GPIO_Port GPIOB
+#define MDM_SIM_DATA_Pin GPIO_PIN_1
+#define MDM_SIM_DATA_GPIO_Port GPIOB
 #define LED_GREEN_Pin GPIO_PIN_12
 #define LED_GREEN_GPIO_Port GPIOD
 #define LED_ORANGE_Pin GPIO_PIN_13

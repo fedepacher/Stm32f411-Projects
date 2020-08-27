@@ -15,7 +15,7 @@ extern QueueHandle_t xQueuePrintConsole;
 data_print_console_t data;
 static uint8_t indice = 0;
 /* Private function prototypes -----------------------------------------------*/
-static void WIFI_Handler(void);
+//static void WIFI_Handler(void);
 
 /**
  * @brief  Rx Callback when new data is received on the UART.
@@ -109,9 +109,9 @@ int8_t HAL_UART_F_Send(const char* Buffer, const uint8_t Length) {
  * @param  None
  * @retval None.
  */
-static void WIFI_Handler(void) {
+/*static void WIFI_Handler(void) {
 	HAL_UART_DeInit(&huart2);
 
 	while (1) {
 	}
-}
+}*/

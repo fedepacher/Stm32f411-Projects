@@ -5,8 +5,8 @@
  *      Author: fedepacher
  */
 
+#include <connect_ClientBG96.h>
 #include "mytasks.h"
-#include "connect_Client.h"
 #include "uart.h"
 #include "stdint.h"
 #include <stdio.h>
@@ -20,6 +20,9 @@
 
 
 /* Private define ------------------------------------------------------------*/
+#define	ACTIVATE_WIFI			1
+
+
 #define CTRL(x) (#x[0]-'a'+1)
 
 
@@ -323,6 +326,7 @@ void initTasks(){
 		while(1);
 	}
 
+	//Atributes defined for print console task
 	osThreadAttr_t printConsoleTask_attributes = {
 	    .name = "printConsole",
 	    .stack_mem = &printTaskBuffer[0],
@@ -332,6 +336,7 @@ void initTasks(){
 	    .priority = (osPriority_t) osPriorityAboveNormal,
 	  };
 
+	//Atributes defined for buttons task
 	osThreadAttr_t buttonsTask_attributes = {
 		    .name = "buttons",
 		    .stack_mem = &buttonsTaskBuffer[0],
@@ -341,14 +346,25 @@ void initTasks(){
 		    .priority = (osPriority_t) osPriorityAboveNormal,
 		  };
 
+	//Atributes defined for connect bg96 task
 	osThreadAttr_t connectTask_attributesBG96 = {
-			    .name = "connect",
+			    .name = "connectBG96",
 			    .stack_mem = &connectTaskBufferBG96[0],
 			    .stack_size = sizeof(connectTaskBufferBG96),
 			    .cb_mem = &connectTaskControlBlockBG96,
 			    .cb_size = sizeof(connectTaskControlBlockBG96),
 			    .priority = (osPriority_t) osPriorityAboveNormal,
 			  };
+
+	//Atributes defined for connect wifi task
+	osThreadAttr_t connectTask_attributesWifi = {
+				    .name = "connectWifi",
+				    .stack_mem = &connectTaskBufferWifi[0],
+				    .stack_size = sizeof(connectTaskBufferWifi),
+				    .cb_mem = &connectTaskControlBlockWifi,
+				    .cb_size = sizeof(connectTaskControlBlockWifi),
+				    .priority = (osPriority_t) osPriorityAboveNormal,
+				  };
 
 	osThreadId_t res = osThreadNew(printConsoleTask, NULL, &printConsoleTask_attributes);
 	if (res == NULL) {
@@ -357,9 +373,9 @@ void initTasks(){
 	}
 
 
-	res = osThreadNew(connectTaskBG96,  NULL, &connectTask_attributesBG96);
+	res = osThreadNew(connectBG96Task,  NULL, &connectTask_attributesBG96);
 	if (res == NULL) {
-		printf("error creacion de tarea connect\r\n");
+		printf("error creacion de tarea connect bg96\r\n");
 		while(1);
 	}
 
@@ -368,7 +384,10 @@ void initTasks(){
 		printf("error creacion de tarea buttons\r\n");
 	}
 
-
+	res = osThreadNew(connectWifiTask, NULL, &connectTask_attributesWifi);
+	if (res == NULL) {
+		printf("error creacion de tarea connect wifi\r\n");
+	}
 
 }
 
@@ -401,7 +420,19 @@ void initTasks(){
 #endif
 
 
-void connectTaskBG96(void *argument){
+
+void connectWifiTask(void *argument){
+
+	for(;;){
+		vTaskDelay(1 / portTICK_PERIOD_MS);
+	}
+}
+
+
+
+
+
+void connectBG96Task(void *argument){
 	//driver_uart_t * uart = (driver_uart_t *)argument;
 	ESP8266_StatusTypeDef Status;
 	int internalState = 1;
@@ -564,7 +595,7 @@ void connectTaskBG96(void *argument){
 			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = SubData(tcpconnectID, 1, sub_topic, qos);
 			//xSemaphoreGive(mutex);
-			osDelay(3000 / portTICK_PERIOD_MS);
+			osDelay(5000 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				internalState++;
 			}
@@ -573,7 +604,7 @@ void connectTaskBG96(void *argument){
 			}
 			break;
 		case 10:
-			xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
+			//xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
 			//xSemaphoreTake(mutex, portMAX_DELAY);
 			memset(pub_data, '\0', BUFFERSIZE_CMD);
 			sprintf((char*)pub_data, "Contador: %d%c%c%c", contador, CTRL(z),'\r', '\n');

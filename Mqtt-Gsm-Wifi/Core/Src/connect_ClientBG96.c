@@ -5,10 +5,10 @@
  *      Author: fedepacher
  */
 
-#include "connect_Client.h"
 #include "stdio.h"
 #include <string.h>
 #include <assert.h>
+#include <connect_ClientBG96.h>
 #include "uart.h"
 #include "stdbool.h"
 #include "cmsis_os.h"

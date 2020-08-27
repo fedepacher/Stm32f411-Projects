@@ -6,9 +6,9 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
+#include <defs.h>
 #include "sysctrl_f.h"
 #include "sysctrl_specific_f.h"
-#include "defs.h"
 
 #define PRINT_FORCE(format, args...) (void) printf(format "\n\r", ## args)
 #define PRINT_INFO(format, args...)  (void) printf("SysCtrl_BG96:" format "\n\r", ## args)

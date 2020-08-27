@@ -5,12 +5,15 @@
  *      Author: fedepacher
  */
 
+#include <general_defs.h>
 #include "uart.h"
 #include "stdio.h"
 
 
 /* Private valirable ---------------------------------------------------------*/
-extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart1;	//--
+extern UART_HandleTypeDef huart2;	//connected to bg96
+extern UART_HandleTypeDef huart6;	//connected to esp8266
 extern QueueHandle_t xQueuePrintConsole;
 data_print_console_t data;
 static uint8_t indice = 0;
@@ -27,7 +30,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	static BaseType_t xHigherPriorityTaskWoken;
 	xHigherPriorityTaskWoken = pdFALSE;
 
-	if (huart->Instance == USART2) {
+	if (huart->Instance == USART2 || huart->Instance == USART6) {
 		uint8_t dato = WiFiRxBuffer.data[WiFiRxBuffer.tail];
 
 		//printf("%c", dato);
@@ -81,8 +84,13 @@ void HAL_UART_F_Init() {
 		WiFiRxBuffer.head = 0;
 		WiFiRxBuffer.tail = 0;
 
-		HAL_UART_Receive_IT(&huart2,
+#if ACTIVATE_WIFI
+		HAL_UART_Receive_IT(&huart6,
 			(uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
+#else
+		HAL_UART_Receive_IT(&huart2,
+					(uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
+#endif
 
 }
 
@@ -90,16 +98,23 @@ void HAL_UART_F_Init() {
 
 void HAL_UART_F_DeInit(void) {
 	/* Reset USART configuration to default */
+	HAL_UART_DeInit(&huart1);
 	HAL_UART_DeInit(&huart2);
+	HAL_UART_DeInit(&huart6);
 }
 
 int8_t HAL_UART_F_Send(const char* Buffer, const uint8_t Length) {
 	/* It is using a blocking call to ensure that the AT commands were correctly sent. */
 
-	if (HAL_UART_Transmit_IT(&huart2, (uint8_t*) Buffer, Length) != HAL_OK){//, ESP_DEFAULT_TIME_OUT
-	//if (HAL_UART_Transmit(&huart1, (uint8_t*) Buffer, Length, ESP_DEFAULT_TIME_OUT) != HAL_OK){
+#if ACTIVATE_WIFI
+	if (HAL_UART_Transmit_IT(&huart6, (uint8_t*) Buffer, Length) != HAL_OK){
 		return -1;
 	}
+#else
+	if (HAL_UART_Transmit_IT(&huart2, (uint8_t*) Buffer, Length) != HAL_OK){
+		return -1;
+	}
+#endif
 	return 0;
 }
 

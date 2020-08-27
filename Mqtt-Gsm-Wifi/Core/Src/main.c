@@ -29,6 +29,7 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
+#include <general_defs.h>
 #include "main.h"
 #include "cmsis_os.h"
 
@@ -36,7 +37,6 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include <string.h>
-#include "defs.h"
 #include "mytasks.h"
 /* USER CODE END Includes */
 

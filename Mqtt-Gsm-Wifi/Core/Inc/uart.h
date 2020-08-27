@@ -14,15 +14,15 @@
 #include "cmsis_os.h"
 #include "semphr.h"
 #include "ring_buffer.h"
+#include "general_defs.h"
 
 /* Private types ------------------------------------------------------------*/
 /* Private constants --------------------------------------------------------*/
 
 /* Private constants --------------------------------------------------------*/
 /* Private macro ------------------------------------------------------------*/
-#define DEBUG			1
-#define WRITE_CHAR		0
-#define DATA_LENGTH		128
+
+
 /* Private functions ------------------------------------------------------- */
 
  /* Public struct ---------------------------------------------------------*/
@@ -34,7 +34,7 @@ typedef struct{
 }driver_uart_t;
 
 typedef struct{
-	uint8_t data_cmd[DATA_LENGTH];
+	uint8_t data_cmd[BUFFERSIZE_CMD];
 }data_print_console_t;
  /**
   * @brief  Uart Initalization.

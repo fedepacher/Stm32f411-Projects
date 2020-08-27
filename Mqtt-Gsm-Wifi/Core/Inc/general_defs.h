@@ -5,8 +5,12 @@
  *      Author: fedepacher
  */
 
-#ifndef INC_DEFS_H_
-#define INC_DEFS_H_
+#ifndef INC_GENERAL_DEFS_H_
+#define INC_GENERAL_DEFS_H_
+
+#define	ACTIVATE_WIFI			1
+#define DEBUG					1
+#define WRITE_CHAR				1
 
 #define END_OF_ARRAY			"EOA"
 
@@ -60,4 +64,4 @@ typedef enum
   ESP8266_TRUE          = 1
 } ESP8266_Boolean;
 
-#endif /* INC_DEFS_H_ */
+#endif /* INC_GENERAL_DEFS_H_ */

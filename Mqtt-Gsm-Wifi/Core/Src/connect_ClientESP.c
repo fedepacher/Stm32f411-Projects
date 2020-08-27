@@ -12,6 +12,7 @@
 #include "uart.h"
 #include "stdbool.h"
 #include "cmsis_os.h"
+#include "FreeRTOS.h"
 
 //static unsigned long int (* ESP_getTime_ms)(void);///< Used to hold handler for time provider.
 //static unsigned long int ESP_t0;///< Keeps entry time for timeout detection.
@@ -196,7 +197,7 @@ ESP8266_StatusTypeDef ESP_IsConnectedWifi(void) {
  * @param ssl Starts SSL connection.
  * @return SUCCESS, BUSY or ERROR.
  */
-ESP8266_StatusTypeDef ESP_StartTCP(const char * host, const uint16_t port, const uint16_t keepalive, const bool ssl) {
+ESP8266_StatusTypeDef ESP_StartTCP(const uint8_t * host, const uint16_t port, const uint16_t keepalive, const uint8_t ssl) {
 	static uint8_t internalState;
 	ESP8266_StatusTypeDef result;
 
@@ -204,7 +205,7 @@ ESP8266_StatusTypeDef ESP_StartTCP(const char * host, const uint16_t port, const
 	switch (internalState = (ESP82_inProgress ? internalState : ESP82_State0)) {
 	case ESP82_State0:
 		// Size check.
-		if(strlen(host) > (ESP_BUFFERSIZE_CMD - 34)){
+		if(strlen((char*)host) > (ESP_BUFFERSIZE_CMD - 34)){
 			return false;
 		}
 

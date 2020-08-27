@@ -16,5 +16,6 @@ void connectBG96Task(void *argument);
 void connectWifiTask(void *argument);
 void buttonsTask(void *argument);
 void timerHandlerTask(void *argument);
+void subscribeTask(void *argument);
 
 #endif /* INC_MYTASKS_H_ */

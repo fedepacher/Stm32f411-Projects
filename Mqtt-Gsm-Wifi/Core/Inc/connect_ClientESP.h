@@ -9,10 +9,10 @@
 #define INC_CONNECT_CLIENTESP_H_
 
 // Includes.
+#include <general_defs.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "defs.h"
 
 
 
@@ -59,7 +59,7 @@ ESP8266_StatusTypeDef ESP_IsConnectedWifi(void);
  * @param ssl Starts SSL connection.
  * @return SUCCESS, BUSY or ERROR.
  */
-ESP8266_StatusTypeDef ESP_StartTCP(const char * host, const uint16_t port, const uint16_t keepalive, const bool ssl);
+ESP8266_StatusTypeDef ESP_StartTCP(const uint8_t * host, const uint16_t port, const uint16_t keepalive, const uint8_t ssl);
 
 /**
  * @brief  Send data over the wifi connection.

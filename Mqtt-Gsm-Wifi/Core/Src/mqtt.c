@@ -105,8 +105,8 @@ ESP8266_StatusTypeDef mqtt_Connect(void) {
 	return Status;
 }
 
-ESP8266_StatusTypeDef mqtt_Publisher(dataMqtt_t *data){
-	unsigned char buffer[128];
+ESP8266_StatusTypeDef mqtt_Publisher(uint8_t *topic, uint8_t *data, uint32_t dataLength){
+	unsigned char buffer[BUFFERSIZE_CMD];
 	int32_t length;
 	int32_t trial = 0;
 	int32_t internalState = 0;
@@ -114,12 +114,12 @@ ESP8266_StatusTypeDef mqtt_Publisher(dataMqtt_t *data){
 
 	// Populate the publish message.
 	MQTTString topicString = MQTTString_initializer;
-	topicString.cstring = data->topic;
+	topicString.cstring = (char*)topic;
 	int qos = 0;
-	memset((char*)buffer, '\0', strlen((char*)buffer));
+	memset((char*)buffer, '\0', BUFFERSIZE_CMD);
 	//strcat((char*)data->data, "\r\n");// OJO QUE PUEDE QUE ALGUNOS ENVIOS NECESITEN ESTE \R\N
-	length = MQTTSerialize_publish(buffer, sizeof(buffer), 0, qos, 0, 0,
-			topicString, data->data, strlen((char*)data->data));
+	length = MQTTSerialize_publish(buffer, BUFFERSIZE_CMD, 0, qos, 0, 0,
+			topicString, data, dataLength);
 
 	// Send PUBLISH to the mqtt broker.
 	while (trial < TRIAL_CONNECTION_TIME) {
@@ -146,14 +146,14 @@ ESP8266_StatusTypeDef mqtt_Publisher(dataMqtt_t *data){
 ESP8266_StatusTypeDef mqtt_Subscriber() {
 
 	int length;
-	unsigned char buffer[128];
+	unsigned char buffer[BUFFERSIZE_CMD];
 	ESP8266_StatusTypeDef Status = ESP8266_OK;
 
 	// Populate the subscribe message.
 	MQTTString topicFilters[1] = { MQTTString_initializer };
 	topicFilters[0].cstring = "test/rgb";
 	int requestedQoSs[1] = { 0 };
-	length = MQTTSerialize_subscribe(buffer, sizeof(buffer), 0, 1, 1,
+	length = MQTTSerialize_subscribe(buffer, BUFFERSIZE_CMD, 0, 1, 1,
 			topicFilters, requestedQoSs);
 
 	// Send SUBSCRIBE to the mqtt broker.
@@ -184,9 +184,9 @@ ESP8266_StatusTypeDef mqtt_Subscriber() {
 	return Status;
 }
 
-ESP8266_StatusTypeDef mqtt_SubscriberPacket(char *topic) {
+ESP8266_StatusTypeDef mqtt_SubscriberPacket(uint8_t *topic) {
 	int length;
-	unsigned char buffer[128];
+	unsigned char buffer[BUFFERSIZE_CMD];
 	ESP8266_StatusTypeDef Status = ESP8266_OK;
 	int32_t trial = 0;
 	int32_t internalState = 0;
@@ -195,7 +195,7 @@ ESP8266_StatusTypeDef mqtt_SubscriberPacket(char *topic) {
 	MQTTString topicFilters[1] = { MQTTString_initializer };
 	topicFilters[0].cstring = topic;//"test/rgb";
 	int requestedQoSs[1] = { 0 };
-	length = MQTTSerialize_subscribe(buffer, sizeof(buffer), 0, 1, 1,
+	length = MQTTSerialize_subscribe(buffer, BUFFERSIZE_CMD, 0, 1, 1,
 			topicFilters, requestedQoSs);
 
 	// Send SUBSCRIBE to the mqtt broker.
@@ -236,20 +236,11 @@ ESP8266_StatusTypeDef mqtt_SubscriberPacket(char *topic) {
 }*/
 
 
-ESP8266_StatusTypeDef mqtt_SubscriberReceive(dataMqtt_t *data){//char topic[], char *pData, uint32_t *length) {
+ESP8266_StatusTypeDef mqtt_SubscriberReceive(uint8_t *data, uint32_t data_length, uint32_t *Retlength){//char topic[], char *pData, uint32_t *length) {
 	ESP8266_StatusTypeDef Status = ESP8266_OK;
-	//uint32_t RetLength;
-	//uint8_t dato[MQTT_BUFFERSIZE];
 
-
-	//alocate memory for the receiving buffer
-	//dato = (uint8_t*) malloc(MQTT_BUFFERSIZE * sizeof(uint8_t));
-	memset(data->data, '\0', MQTT_BUFFERSIZE);
-	ESP_ReceiveData(data->data, MQTT_BUFFERSIZE, &data->length);
-	//strcpy(*(pData), (char*)dato);	//ACA NO ME DEVUELVE EL ARREGLO
-	//*(length) = RetLength;
-	//*(pData) = findIntData(topic, dato, RetLength);
-	//free(dato);
+	memset(data, '\0', data_length);
+	ESP_ReceiveData(data, data_length, Retlength);
 
 	return Status;
 }

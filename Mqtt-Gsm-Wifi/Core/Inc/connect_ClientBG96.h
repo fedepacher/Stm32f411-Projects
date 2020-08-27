@@ -9,11 +9,11 @@
 #define INC_CONNECT_CLIENTBG96_H_
 
 // Includes.
+#include <general_defs.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "cmsis_os.h"
-#include "defs.h"
 
 
 /* Private typedef -----------------------------------------------------------*/

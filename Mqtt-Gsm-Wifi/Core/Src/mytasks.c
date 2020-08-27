@@ -6,6 +6,7 @@
  */
 
 #include <connect_ClientBG96.h>
+#include <general_defs.h>
 #include "mytasks.h"
 #include "uart.h"
 #include "stdint.h"
@@ -17,10 +18,11 @@
 #include "sysctrl_specific_f.h"
 #include "debounce.h"
 #include "timer_freertos.h"
-
+#include "connect_ClientESP.h"
+#include "mqtt.h"
 
 /* Private define ------------------------------------------------------------*/
-#define	ACTIVATE_WIFI			1
+
 
 
 #define CTRL(x) (#x[0]-'a'+1)
@@ -263,6 +265,7 @@ static const uint8_t retain = 0;
 static uint8_t pub_topic[32] = "topic/pub";
 static uint8_t sub_topic[32] = "topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
+static uint8_t sub_data[BUFFERSIZE_CMD];
 
 
 
@@ -287,7 +290,17 @@ osThreadId_t connectTaskcHandleWifi;
 uint32_t connectTaskBufferWifi[ 512 ];
 StaticTask_t connectTaskControlBlockWifi;
 
+osThreadId_t subscribeTaskcHandle;
+uint32_t subscribeTaskBuffer[ 512 ];
+StaticTask_t subscribeTaskControlBlock;
 
+
+/**
+ * @brief	Check flag and set error led, increment internal state if it is needed
+ * @param	status			flag that indicate if led should be on or off
+ * @param	internalstate	state on FSM
+ */
+static int CheckFlag(ESP8266_StatusTypeDef status, int internalState);
 
 
 static void clean_Timer(TimerHandle_t *timerT);
@@ -373,21 +386,24 @@ void initTasks(){
 	}
 
 
-	res = osThreadNew(connectBG96Task,  NULL, &connectTask_attributesBG96);
+#if ACTIVATE_WIFI
+	res = osThreadNew(connectWifiTask, NULL, &connectTask_attributesWifi);
 	if (res == NULL) {
-		printf("error creacion de tarea connect bg96\r\n");
-		while(1);
+		printf("error creacion de tarea connect wifi\r\n");
 	}
+#else
+	res = osThreadNew(connectBG96Task,  NULL, &connectTask_attributesBG96);
+		if (res == NULL) {
+			printf("error creacion de tarea connect bg96\r\n");
+			while(1);
+	}
+#endif
 
 	res = osThreadNew(buttonsTask, NULL, &buttonsTask_attributes);
 	if (res == NULL) {
 		printf("error creacion de tarea buttons\r\n");
 	}
 
-	res = osThreadNew(connectWifiTask, NULL, &connectTask_attributesWifi);
-	if (res == NULL) {
-		printf("error creacion de tarea connect wifi\r\n");
-	}
 
 }
 
@@ -420,16 +436,136 @@ void initTasks(){
 #endif
 
 
+static int CheckFlag(ESP8266_StatusTypeDef status, int internalState){
+	if (status == ESP8266_OK) {
+		// To the next state.
+		internalState++;
+		HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
+	}
+	else{
+		if (status == ESP8266_ERROR)
+			HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
+	}
+	return internalState;
+}
 
 void connectWifiTask(void *argument){
+		ESP8266_StatusTypeDef Status;
+		static int internalState = 0;
+		TickType_t t = xTaskGetTickCount();
+		uint8_t contador = 0;
+		HAL_UART_F_Init();
+		printf("Conectando a wifi, Espere por favor.. \r\n");
+		for (;;) {
+			switch (internalState) {
+			case 0:
+				/* AGREGAR MUTEX */
+				Status = ESP_ConnectWifi(true, WIFI_AP_SSID, WIFI_AP_PASS);
+				/* SACAR MUTEX */
 
-	for(;;){
-		vTaskDelay(1 / portTICK_PERIOD_MS);
-	}
+				internalState = CheckFlag(Status, internalState);
+
+				break;
+			case 1:
+				// Wait 1sec.
+				Status = ESP_Delay(1000);
+
+				internalState = CheckFlag(Status, internalState);
+
+				break;
+			case 2:
+				// Check the wifi connection status.
+				Status = ESP_IsConnectedWifi();
+
+				internalState = CheckFlag(Status, internalState);
+
+				break;
+			case 3:
+				// Start TCP connection.
+
+				/* AGREGAR MUTEX */
+				Status = ESP_StartTCP(host, port, keepalive, sslenable);
+				/* SACAR MUTEX */
+
+				internalState = CheckFlag(Status, internalState);
+				break;
+			case 4:
+				// Send the mqtt data.
+
+				/* AGREGAR MUTEX */
+				Status = mqtt_Connect();
+				/* SACAR MUTEX */
+
+				internalState = CheckFlag(Status, internalState);
+				break;
+			case 5:
+
+				/* AGREGAR MUTEX */
+//				Status = mqtt_SubscriberPacket(sub_topic);
+//				/* SACAR MUTEX */
+//				if(Status == ESP8266_OK){
+//					//Atributes defined for connect wifi task
+//					osThreadAttr_t subscribeTask_attributes = {
+//							.name = "connectWifi",
+//							.stack_mem = &subscribeTaskBuffer[0],
+//							.stack_size = sizeof(subscribeTaskBuffer),
+//							.cb_mem = &subscribeTaskControlBlock,
+//							.cb_size = sizeof(subscribeTaskControlBlock),
+//							.priority = (osPriority_t) osPriorityAboveNormal,
+//					};
+//
+//					osThreadId_t res = osThreadNew(subscribeTask, NULL, &subscribeTask_attributes);
+//					if (res == NULL) {
+//						printf("error creacion de tarea\r\n");
+//						while(1);
+//					}
+//				}
+//
+//				internalState = CheckFlag(Status, internalState);
+
+				internalState++;
+				//vTaskDelayUntil(&t, pdMS_TO_TICKS(5000));
+				vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+				break;
+			case 6:
+				xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
+				memset(pub_data, '\0', BUFFERSIZE_CMD);
+				sprintf((char*)pub_data, "Contador: %d%c%c", contador,'\r', '\n');
+				Status = mqtt_Publisher(pub_topic, pub_data, strlen((char*)pub_data));
+				//vTaskDelayUntil(&t, pdMS_TO_TICKS(2000));
+				contador++;
+				vTaskDelay(2000 / portTICK_PERIOD_MS);
+				break;
+
+			default:
+				break;
+			}
+			osDelay(1 / portTICK_PERIOD_MS);
+		}
+
 }
 
 
+void subscribeTask(void *argument) {
+	ESP8266_StatusTypeDef Status;
+	uint32_t RetLength = 0;
 
+	for (;;) {
+
+		//xSemaphoreTake(mutex, 20000);
+		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
+		//xSemaphoreGive(mutex);
+
+		if (Status == ESP8266_OK) {
+			if (RetLength != 0){
+				sub_data[RetLength] = '\0';
+				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
+			}
+		}
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+	}
+}
 
 
 void connectBG96Task(void *argument){

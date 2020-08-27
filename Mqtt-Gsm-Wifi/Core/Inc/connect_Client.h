@@ -24,8 +24,9 @@
 #define AT_SEND_PROMPT_STRING   ">"
 #define AT_ERROR_STRING         "ERROR\r\n"
 #define AT_IPD_STRING           "+IPD,"
-
-
+#define QMTSUB_STRING   		"+QMTSUB:"
+#define QMTCONN_STRING   		"+QMTCONN:"
+#define QMTOPEN_STRING			"+QMTOPEN:"
 // Buffer settings.
 #define BUFFERSIZE_RESPONSE 	1500UL
 #define BUFFERSIZE_CMD 			128UL
@@ -143,6 +144,18 @@ ESP8266_StatusTypeDef MQTTConnect(const uint8_t * clientId, const uint8_t * user
 ESP8266_StatusTypeDef PubData(uint8_t tcpconnectID, uint32_t msgID, uint8_t qos, uint8_t retain, uint8_t* topic,
 uint8_t* dataBuffer, uint32_t Length);
 
+/**
+ * @brief  Subscribe topic over GSM connection.
+ * @param  tcpconnectID:MQTT socket identifier. The range is 0-5.
+ * @param  msgID: 		Message identifier of packet. The range is 0-65535. It will be 0 only when <qos>=0.
+ * @param  topic:		Topic that needs to be published
+ * @param  qos:			The QoS level at which the client wants to publish the messages.
+ * 							0 At most once
+ * 							1 At least once
+ * 							2 Exactly once
+ * @retval Returns ESP8266_OK on success and ESP8266_ERROR otherwise.
+ */
+ESP8266_StatusTypeDef SubData(uint8_t tcpconnectID, uint32_t msgID, uint8_t* topic, uint8_t qos);
 
 /*
  * @brief Receive data over the wifi connection.

@@ -257,7 +257,8 @@ static uint8_t sslenable = 0; ///< SSL is disabled by default.
 static const uint32_t msgID = 0;
 static const uint8_t qos = 0;
 static const uint8_t retain = 0;
-static uint8_t pub_topic[32] = "topic/pub";//"test/pdm\0";
+static uint8_t pub_topic[32] = "topic/pub";
+static uint8_t sub_topic[32] = "topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
 
 
@@ -275,20 +276,15 @@ osThreadId_t buttonsTaskHandle;
 uint32_t buttonsTaskBuffer[ 512 ];
 StaticTask_t buttonsTaskControlBlock;
 
-osThreadId_t connectTaskHandle;
-uint32_t connectTaskBuffer[ 512 ];
-StaticTask_t connectTaskControlBlock;
-//osThreadId_t Handle;
-//uint32_t _calcAvgBuffer[ 512 ];
-////osStaticThreadDef_t _calcAvgControlBlock;
-//const osThreadAttr_t _calcAvg_attributes = {
-//  .name = "_calcAvg",
-//  .stack_mem = &_calcAvgBuffer[0],
-//  .stack_size = sizeof(_calcAvgBuffer),
-//  .cb_mem = &_calcAvgControlBlock,
-//  .cb_size = sizeof(_calcAvgControlBlock),
-//  .priority = (osPriority_t) osPriorityNormal,
-//};
+osThreadId_t connectTaskcHandleBG96;
+uint32_t connectTaskBufferBG96[ 512 ];
+StaticTask_t connectTaskControlBlockBG96;
+
+osThreadId_t connectTaskcHandleWifi;
+uint32_t connectTaskBufferWifi[ 512 ];
+StaticTask_t connectTaskControlBlockWifi;
+
+
 
 
 static void clean_Timer(TimerHandle_t *timerT);
@@ -345,12 +341,12 @@ void initTasks(){
 		    .priority = (osPriority_t) osPriorityAboveNormal,
 		  };
 
-	osThreadAttr_t connectTask_attributes = {
+	osThreadAttr_t connectTask_attributesBG96 = {
 			    .name = "connect",
-			    .stack_mem = &connectTaskBuffer[0],
-			    .stack_size = sizeof(connectTaskBuffer),
-			    .cb_mem = &connectTaskControlBlock,
-			    .cb_size = sizeof(connectTaskControlBlock),
+			    .stack_mem = &connectTaskBufferBG96[0],
+			    .stack_size = sizeof(connectTaskBufferBG96),
+			    .cb_mem = &connectTaskControlBlockBG96,
+			    .cb_size = sizeof(connectTaskControlBlockBG96),
 			    .priority = (osPriority_t) osPriorityAboveNormal,
 			  };
 
@@ -361,17 +357,17 @@ void initTasks(){
 	}
 
 
-	res = osThreadNew(connectTask,  NULL, &connectTask_attributes);
+	res = osThreadNew(connectTaskBG96,  NULL, &connectTask_attributesBG96);
 	if (res == NULL) {
 		printf("error creacion de tarea connect\r\n");
 		while(1);
 	}
-	/*
+
 	res = osThreadNew(buttonsTask, NULL, &buttonsTask_attributes);
 	if (res == NULL) {
 		printf("error creacion de tarea buttons\r\n");
 	}
-*/
+
 
 
 }
@@ -405,7 +401,7 @@ void initTasks(){
 #endif
 
 
-void connectTask(void *argument){
+void connectTaskBG96(void *argument){
 	//driver_uart_t * uart = (driver_uart_t *)argument;
 	ESP8266_StatusTypeDef Status;
 	int internalState = 1;
@@ -555,7 +551,20 @@ void connectTask(void *argument){
 			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = MQTTConnect(clientId, userName, password, tcpconnectID);
 			//xSemaphoreGive(mutex);
-			osDelay(1000 / portTICK_PERIOD_MS);
+			osDelay(3000 / portTICK_PERIOD_MS);
+			if (Status == ESP8266_OK) {
+				internalState++;
+				//internalState++;
+			}
+			else{
+				osDelay(1000 / portTICK_PERIOD_MS);
+			}
+			break;
+		case 9:
+			//xSemaphoreTake(mutex, portMAX_DELAY);
+			Status = SubData(tcpconnectID, 1, sub_topic, qos);
+			//xSemaphoreGive(mutex);
+			osDelay(3000 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				internalState++;
 			}
@@ -563,8 +572,8 @@ void connectTask(void *argument){
 				osDelay(1000 / portTICK_PERIOD_MS);
 			}
 			break;
-		case 9:
-			//xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
+		case 10:
+			xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
 			//xSemaphoreTake(mutex, portMAX_DELAY);
 			memset(pub_data, '\0', BUFFERSIZE_CMD);
 			sprintf((char*)pub_data, "Contador: %d%c%c%c", contador, CTRL(z),'\r', '\n');
@@ -594,7 +603,6 @@ void buttonsTask(void *argument){
 		if(button_down.released){
 			xSemaphoreGive(xSemaphoreButton);
 
-			//Timer_Change_Period(&timer_timeout_cmd, 1000);
 		}
 
 

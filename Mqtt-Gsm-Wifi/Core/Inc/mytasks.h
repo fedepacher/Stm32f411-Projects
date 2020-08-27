@@ -12,7 +12,7 @@
 
 void initTasks();
 void printConsoleTask(void *argument);
-void connectTask(void *argument);
+void connectTaskBG96(void *argument);
 void buttonsTask(void *argument);
 void timerHandlerTask(void *argument);
 

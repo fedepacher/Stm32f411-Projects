@@ -232,7 +232,7 @@ ESP8266_StatusTypeDef MQTTOpen(const uint8_t * host, const uint16_t port, const 
 			}
 	case State8:
 		sprintf((char *)cmdBuffer, "AT+QMTOPEN=%u,\"%s\",%d%c%c%c", tcpconnectID, host,  port, '\r', '\n', '\0');
-		if(ESP8266_OK == (result = atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) AT_OK_STRING, CMD_TIMEOUT_75000))){
+		if(ESP8266_OK == (result = atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) QMTOPEN_STRING, CMD_TIMEOUT_75000))){
 			// To the next state.
 			internalState = State9;
 		}else{
@@ -268,7 +268,7 @@ ESP8266_StatusTypeDef MQTTConnect(const uint8_t * clientId, const uint8_t * user
 			internalState = State1;
 
 		case State1:
-			if(ESP8266_OK == (result = atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) AT_OK_STRING, CMD_TIMEOUT_15000))){
+			if(ESP8266_OK == (result = atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) QMTCONN_STRING, CMD_TIMEOUT_15000))){
 				return result;
 			}
 	}
@@ -315,6 +315,35 @@ ESP8266_StatusTypeDef PubData(uint8_t tcpconnectID, uint32_t msgID, uint8_t qos,
 	}
 
 	return Ret;
+}
+
+/**
+ * @brief  Subscribe topic over GSM connection.
+ * @param  tcpconnectID:MQTT socket identifier. The range is 0-5.
+ * @param  msgID: 		Message identifier of packet. The range is 0-65535. It will be 0 only when <qos>=0.
+ * @param  topic:		Topic that needs to be published
+ * @param  qos:			The QoS level at which the client wants to publish the messages.
+ * 							0 At most once
+ * 							1 At least once
+ * 							2 Exactly once
+ * @retval Returns ESP8266_OK on success and ESP8266_ERROR otherwise.
+ */
+ESP8266_StatusTypeDef SubData(uint8_t tcpconnectID, uint32_t msgID, uint8_t* topic, uint8_t qos) {
+	static uint8_t internalState;
+		ESP8266_StatusTypeDef result;
+
+		switch (internalState = (inProgress ? internalState : State0)) {
+			case State0:
+
+				sprintf((char *) cmdBuffer, "AT+QMTSUB=%u,%lu,\"%s\",%u%c%c", tcpconnectID, (unsigned long)msgID, topic, qos, '\r', '\n');
+				internalState = State1;
+
+			case State1:
+				if(ESP8266_OK == (result = atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) QMTSUB_STRING, CMD_TIMEOUT_5000))){
+					return result;
+				}
+		}
+		return result;
 }
 
 /*

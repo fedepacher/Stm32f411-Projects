@@ -11,6 +11,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include "MQTTPacket.h"
+#include "data_manage.h"
+#include "connect_ClientESP.h"
+
 
 
 #define TRIAL_CONNECTION_TIME	5
@@ -24,7 +27,7 @@ ESP8266_StatusTypeDef mqtt_Connect(void) {
 	//MQTTTransport transporter;
 	//int32_t result;
 	int32_t length;
-	unsigned char buffer[128];
+	unsigned char buffer[BUFFERSIZE_CMD];
 
 	ESP8266_StatusTypeDef Status = ESP8266_OK;
 	int32_t internalState = 0;
@@ -47,7 +50,7 @@ ESP8266_StatusTypeDef mqtt_Connect(void) {
 			connectData.keepAliveInterval = CONNECTION_KEEPALIVE_S * 2;
 			//connectData.willFlag = 1;
 			//connectData.will.qos = 2;
-			memset((char*)buffer, '\0', strlen((char*)buffer));
+			memset((char*)buffer, '\0', BUFFERSIZE_CMD);
 			length = MQTTSerialize_connect(buffer, sizeof(buffer),
 					&connectData);
 
@@ -175,7 +178,7 @@ ESP8266_StatusTypeDef mqtt_Subscriber() {
 			//alocate memory bor the receiving buffer
 			dato = (uint8_t*) malloc(128 * sizeof(uint8_t));
 			memset(dato, '\0', 128);
-			ESP_ReceiveData(dato, 128, &RetLength);
+			ReceiveData(dato, 128, &RetLength);
 			free(dato);
 		}
 	} else {
@@ -195,6 +198,7 @@ ESP8266_StatusTypeDef mqtt_SubscriberPacket(uint8_t *topic) {
 	MQTTString topicFilters[1] = { MQTTString_initializer };
 	topicFilters[0].cstring = topic;//"test/rgb";
 	int requestedQoSs[1] = { 0 };
+	memset((char*)buffer, '\0', BUFFERSIZE_CMD);
 	length = MQTTSerialize_subscribe(buffer, BUFFERSIZE_CMD, 0, 1, 1,
 			topicFilters, requestedQoSs);
 
@@ -240,7 +244,7 @@ ESP8266_StatusTypeDef mqtt_SubscriberReceive(uint8_t *data, uint32_t data_length
 	ESP8266_StatusTypeDef Status = ESP8266_OK;
 
 	memset(data, '\0', data_length);
-	ESP_ReceiveData(data, data_length, Retlength);
+	ReceiveData(data, data_length, Retlength);
 
 	return Status;
 }

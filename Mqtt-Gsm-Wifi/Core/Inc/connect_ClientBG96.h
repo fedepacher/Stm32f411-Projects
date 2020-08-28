@@ -22,21 +22,17 @@
 /* Public variables ---------------------------------------------------------*/
 
 
-/*
- * @brief Creates non-blocking delay.
- * @param delay_ms Delay time in ms.
- * @return SUCCESS, BUSY.
- */
-ESP8266_StatusTypeDef Delay(const uint16_t delay_ms);
+
 
 /*
  * @brief TCP Connect.
  * @param cmd:		Commando to send to gsm module.
  * @param length	Command's Length.
- * @param timeout	Command timeout
+ * @param Token		Response expencted.
+ * @param timeout	Command timeout.
  * @return SUCCESS, BUSY or ERROR.
  */
-ESP8266_StatusTypeDef ConnectTCP(const uint8_t * cmd, uint32_t length, uint32_t timeout);
+ESP8266_StatusTypeDef ConnectTCP(const uint8_t * cmd, uint32_t length, const uint8_t* Token, uint32_t timeout) ;
 
 
 
@@ -105,15 +101,6 @@ uint8_t* dataBuffer, uint32_t Length);
  */
 ESP8266_StatusTypeDef SubData(uint8_t tcpconnectID, uint32_t msgID, uint8_t* topic, uint8_t qos);
 
-/*
- * @brief Receive data over the wifi connection.
- * @param  Buffer: the buffer to receive
- * @param  Length: the Buffer's data size.
- * @param  RetLength: the Buffer's data length received.
- * @retval Returns ESP8266_OK on success and ESP8266_ERROR otherwise.
- */
-ESP8266_StatusTypeDef ReceiveData(uint8_t* Buffer, uint32_t Length,
-		uint32_t* RetLength);
 
 /*
  * @brief Reset Module ESP.

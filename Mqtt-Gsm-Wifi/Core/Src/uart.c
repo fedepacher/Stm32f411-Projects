@@ -15,6 +15,7 @@ extern UART_HandleTypeDef huart1;	//--
 extern UART_HandleTypeDef huart2;	//connected to bg96
 extern UART_HandleTypeDef huart6;	//connected to esp8266
 extern QueueHandle_t xQueuePrintConsole;
+extern QueueHandle_t xSemaphoreSub;
 data_print_console_t data;
 static uint8_t indice = 0;
 /* Private function prototypes -----------------------------------------------*/
@@ -40,15 +41,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		}
 		// Receive one byte in interrupt mode
 		HAL_UART_Receive_IT(huart, (uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
-		/*if(xSemaphoreSub != NULL){
+		if(xSemaphoreSub != NULL){//WAKEUP SUBSCRIBE TASK
 			if(dato == '\n')
 				xSemaphoreGiveFromISR(xSemaphoreSub, &xHigherPriorityTaskWoken);
-		}*/
+		}
 #if DEBUG
 	#if WRITE_CHAR
 		xQueueSendFromISR(xQueuePrintConsole, &dato, &xHigherPriorityTaskWoken);
 	#else
-		if(indice < DATA_LENGTH)
+		if(indice < BUFFERSIZE_CMD)
 			data.data_cmd[indice++] = dato;
 		else
 			indice = 0;

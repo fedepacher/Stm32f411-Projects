@@ -23,17 +23,12 @@
 
 /* Private define ------------------------------------------------------------*/
 
-
-
 #define CTRL(x) (#x[0]-'a'+1)
-
 
 #define STACK_SIZE				512UL
 #define CONSOLE_QUEUE_LENGTH	50
 #define CMD_LENGTH				128
 #define TRIAL					1
-
-
 
 //FSM maximun timeout
 #define FSM_TIMEOUT_100			100U
@@ -95,25 +90,24 @@
 //#define AT_QISEND_A				"AT+QISEND=0\r\n"
 
 /*#define AT_QMTCFG_VERSION		"AT+QMTCFG=\"version\",0,3\r\n"
-#define AT_QMTCFG_PDPCID		"AT+QMTCFG=\"pdpcid\",0,1\r\n"
-#define AT_QMTCFG_WILL			"AT+QMTCFG=\"will\",0\r\n"
-#define AT_QMTCFG_TIMEOUT		"AT+QMTCFG=\"timeout\",0\r\n"
-#define AT_QMTCFG_SESSION		"AT+QMTCFG=\"session\",0,0,\r\n"
-#define AT_QMTCFG_KEEPALIVE		"AT+QMTCFG=\"keepalive\",0,120,\r\n"
-#define AT_QMTCFG_SSL 			"AT+QMTCFG=\"ssl\",0,0,0,\r\n"
+ #define AT_QMTCFG_PDPCID		"AT+QMTCFG=\"pdpcid\",0,1\r\n"
+ #define AT_QMTCFG_WILL			"AT+QMTCFG=\"will\",0\r\n"
+ #define AT_QMTCFG_TIMEOUT		"AT+QMTCFG=\"timeout\",0\r\n"
+ #define AT_QMTCFG_SESSION		"AT+QMTCFG=\"session\",0,0,\r\n"
+ #define AT_QMTCFG_KEEPALIVE		"AT+QMTCFG=\"keepalive\",0,120,\r\n"
+ #define AT_QMTCFG_SSL 			"AT+QMTCFG=\"ssl\",0,0,0,\r\n"
 
 
-#define AT_QMTOPEN_Q			"AT+QMTOPEN=?\r\n"
-#define AT_QMTOPEN_A			"AT+QMTOPEN=0,\"broker.hivemq.com\",1883\r\n"
-#define AT_QMTOPEN1_Q			"AT+QMTOPEN?\r\n"
-#define AT_QMTCONN_Q			"AT+QMTCONN=?\r\n"
-#define AT_QMTCONN_A			"AT+QMTCONN=0,\"fedeID\",\"\",\"\"\r\n"*/
+ #define AT_QMTOPEN_Q			"AT+QMTOPEN=?\r\n"
+ #define AT_QMTOPEN_A			"AT+QMTOPEN=0,\"broker.hivemq.com\",1883\r\n"
+ #define AT_QMTOPEN1_Q			"AT+QMTOPEN?\r\n"
+ #define AT_QMTCONN_Q			"AT+QMTCONN=?\r\n"
+ #define AT_QMTCONN_A			"AT+QMTCONN=0,\"fedeID\",\"\",\"\"\r\n"*/
 #define AT_QMTSUB_Q				"AT+QMTSUB=?\r\n"
 #define AT_QMTSUB1_A			"AT+QMTSUB=0,1,\"topic/example\",0\r\n"
 #define AT_QMTUNS_A				"AT+QMTUNS=0,2,\"topic/example\"\r\n"
 #define AT_QMTPUB_Q				"AT+QMTPUB=?\r\n"
 #define AT_QMTDISC_A			"AT+QMTDISC=0\r\n"
-
 
 //#define MSG						"This is test data, hello my dear MQTT.\r\n"
 
@@ -123,129 +117,122 @@
 //#define AT_CGQMIN_Q				"AT+CGQMIN?"//VER ESTE COMANDO
 //"AT+CGEQMIN"
 
-typedef struct{
+typedef struct {
 	uint8_t cmd[CMD_LENGTH];
+	uint8_t response[CMD_LENGTH];
 	uint32_t cmd_timeout;
 	uint32_t fsm_timeout;
-}cmd_type_t;
+} cmd_type_t;
 
-static const cmd_type_t BG96_COMMAND_INIT [] =
-{
-		{AT_IFC_A,	 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_CMD, 					CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{ATE1_A, 					CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_CMEE_A, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{ATV1_A, 					CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_AND_D0_A,	 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_CGMR_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_CFUN_0_A, 				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		{AT_QCFG_BAND_A, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QCFG_IOT_A, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QCFG_NWSCANSEQ_A, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QCFG_NWSCANMODE_A,		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+static const cmd_type_t BG96_COMMAND_INIT[] = { { AT_IFC_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { ATE1_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_CMEE_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { ATV1_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_AND_D0_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_CGMR_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_CFUN_0_A, AT_OK_STRING,
+		CMD_TIMEOUT_15000, FSM_TIMEOUT_100 }, { AT_QCFG_BAND_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_QCFG_IOT_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_QCFG_NWSCANSEQ_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, { AT_QCFG_NWSCANMODE_A,
+		AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_100 },
 
-		{END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-};
+{ END_OF_ARRAY, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, };
 
-static const cmd_type_t BG96_COMMAND_1 [] =
-{
-		{AT_QICSGP1_A, 				CMD_TIMEOUT_5000, 		FSM_TIMEOUT_20000},
-		{AT_QICSGP2_A, 				CMD_TIMEOUT_5000, 		FSM_TIMEOUT_20000},
-		{AT_CFUN_1_A,	 			CMD_TIMEOUT_15000, 		FSM_TIMEOUT_20000},
-		{AT_QCCID_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
+static const cmd_type_t BG96_COMMAND_1[] = { { AT_QICSGP1_A, AT_OK_STRING,
+		CMD_TIMEOUT_5000, FSM_TIMEOUT_20000 }, { AT_QICSGP2_A, AT_OK_STRING,
+		CMD_TIMEOUT_5000, FSM_TIMEOUT_20000 }, { AT_CFUN_1_A, AT_OK_STRING,
+		CMD_TIMEOUT_15000, FSM_TIMEOUT_20000 }, { AT_QCCID_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_20000 },
 
-		{END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-};
+{ END_OF_ARRAY, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, };
 
-static const cmd_type_t BG96_COMMAND_2 [] =
-{
+static const cmd_type_t BG96_COMMAND_2[] =
+		{
 
-		{AT_QINITSTAT_CMD,			CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
-		{AT_QINITSTAT_CMD,			CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
-		{AT_QINITSTAT_CMD,			CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
+				{ AT_QINITSTAT_CMD, AT_ERROR_STRING, CMD_TIMEOUT_300,
+						FSM_TIMEOUT_20000 }, { AT_QINITSTAT_CMD,
+						AT_ERROR_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_20000 }, {
+						AT_QINITSTAT_CMD, AT_ERROR_STRING, CMD_TIMEOUT_300,
+						FSM_TIMEOUT_20000 },
 
-		{END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-};
+				{ END_OF_ARRAY, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, };
 
-
-static const cmd_type_t BG96_COMMAND_3 [] =
-{
-		{AT_CPIN_Q, 				CMD_TIMEOUT_5000, 		FSM_TIMEOUT_20000},
-		{AT_QGMR_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CPIN_Q, 				CMD_TIMEOUT_5000, 		FSM_TIMEOUT_20000},
-		{AT_CGDCONT_Q,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
-		{AT_CREG_A,					CMD_TIMEOUT_300, 		FSM_TIMEOUT_90000},
-		{AT_CGREG_A, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CEREG_A, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_GSN_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CGMI_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CGMM_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_QGMR_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CGSN_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_QCCID_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
-		{AT_CIMI_CMD, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_20000},
-		{AT_COPS_Q, 				CMD_TIMEOUT_180000,		FSM_TIMEOUT_20000},
-		{AT_COPS_A, 				CMD_TIMEOUT_180000,		FSM_TIMEOUT_20000},
-		{AT_CEREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CREG_Q,					CMD_TIMEOUT_300, 		FSM_TIMEOUT_90000},
-		{AT_CGREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CGATT_A, 				CMD_TIMEOUT_140000,		FSM_TIMEOUT_60000},
-		/*{AT_CSQ_CMD, 				CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
-		{AT_QCSQ_CMD, 				CMD_TIMEOUT_5000,		FSM_TIMEOUT_60000},
-		{AT_QNWINFO_CMD, 			CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
-		{AT_CEREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CREG_Q,					CMD_TIMEOUT_300, 		FSM_TIMEOUT_90000},
-		{AT_CGREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_COPS_Q, 				CMD_TIMEOUT_180000,		FSM_TIMEOUT_20000},
-		{AT_CEREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_CREG_Q,					CMD_TIMEOUT_300, 		FSM_TIMEOUT_90000},
-		{AT_CGREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
-		{AT_COPS_Q, 				CMD_TIMEOUT_180000,		FSM_TIMEOUT_20000},
-		{AT_CGATT_Q, 				CMD_TIMEOUT_140000,		FSM_TIMEOUT_60000},*/
-		{AT_CGEREP_A, 				CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
-		{AT_QIACT_Q, 				CMD_TIMEOUT_150000,		FSM_TIMEOUT_150000},
-		{AT_QIACT_A, 				CMD_TIMEOUT_150000,		FSM_TIMEOUT_150000},
-		{AT_QIACT_Q, 				CMD_TIMEOUT_150000,		FSM_TIMEOUT_150000},
+static const cmd_type_t BG96_COMMAND_3[] = { { AT_CPIN_Q, AT_OK_STRING,
+		CMD_TIMEOUT_5000, FSM_TIMEOUT_20000 }, { AT_QGMR_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CPIN_Q, AT_OK_STRING,
+		CMD_TIMEOUT_5000, FSM_TIMEOUT_20000 }, { AT_CGDCONT_Q, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_20000 }, { AT_CREG_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_90000 }, { AT_CGREG_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CEREG_A, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_GSN_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CGMI_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CGMM_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_QGMR_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CGSN_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_QCCID_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_20000 }, { AT_CIMI_CMD, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_20000 }, { AT_COPS_Q, AT_OK_STRING,
+		CMD_TIMEOUT_180000, FSM_TIMEOUT_20000 }, { AT_COPS_A, AT_OK_STRING,
+		CMD_TIMEOUT_180000, FSM_TIMEOUT_20000 }, { AT_CEREG_Q, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CREG_Q, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_90000 }, { AT_CGREG_Q, AT_OK_STRING,
+		CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_CGATT_A, AT_OK_STRING,
+		CMD_TIMEOUT_140000, FSM_TIMEOUT_60000 },
+/*{AT_CSQ_CMD, 				CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
+ {AT_QCSQ_CMD, 				CMD_TIMEOUT_5000,		FSM_TIMEOUT_60000},
+ {AT_QNWINFO_CMD, 			CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
+ {AT_CEREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
+ {AT_CREG_Q,					CMD_TIMEOUT_300, 		FSM_TIMEOUT_90000},
+ {AT_CGREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
+ {AT_COPS_Q, 				CMD_TIMEOUT_180000,		FSM_TIMEOUT_20000},
+ {AT_CEREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
+ {AT_CREG_Q,					CMD_TIMEOUT_300, 		FSM_TIMEOUT_90000},
+ {AT_CGREG_Q, 				CMD_TIMEOUT_300, 		FSM_TIMEOUT_60000},
+ {AT_COPS_Q, 				CMD_TIMEOUT_180000,		FSM_TIMEOUT_20000},
+ {AT_CGATT_Q, 				CMD_TIMEOUT_140000,		FSM_TIMEOUT_60000},*/
+{ AT_CGEREP_A, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, { AT_QIACT_Q,
+		AT_OK_STRING, CMD_TIMEOUT_150000, FSM_TIMEOUT_150000 }, { AT_QIACT_A,
+		AT_OK_STRING, CMD_TIMEOUT_150000, FSM_TIMEOUT_150000 }, { AT_QIACT_Q,
+		AT_OK_STRING, CMD_TIMEOUT_150000, FSM_TIMEOUT_150000 },
 		//{AT_QIACT_Q, 				CMD_TIMEOUT_150000,		FSM_TIMEOUT_60000},
-		{AT_CSQ_CMD, 				CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
-		{AT_QCSQ_CMD, 				CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
-		{AT_QNWINFO_CMD, 			CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
+		{ AT_CSQ_CMD, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_60000 }, {
+				AT_QCSQ_CMD, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_60000 },
+		{ AT_QNWINFO_CMD, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_60000 },
 		/*{AT_CSQ_CMD, 				CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},
-		{AT_QCSQ_CMD, 				CMD_TIMEOUT_5000,		FSM_TIMEOUT_60000},
-		{AT_QNWINFO_CMD, 			CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},*/
+		 {AT_QCSQ_CMD, 				CMD_TIMEOUT_5000,		FSM_TIMEOUT_60000},
+		 {AT_QNWINFO_CMD, 			CMD_TIMEOUT_300,		FSM_TIMEOUT_60000},*/
 
-		{END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-};
-
+		{ END_OF_ARRAY, AT_OK_STRING, CMD_TIMEOUT_300, FSM_TIMEOUT_100 }, };
 
 /*static const cmd_type_t BG96_COMMAND_3 [] =
-{
-		{AT_QMTCFG_VERSION, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QMTCFG_PDPCID, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QMTCFG_WILL, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QMTCFG_TIMEOUT, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QMTCFG_SESSION, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QMTCFG_KEEPALIVE, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-		{AT_QMTCFG_SSL, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {
+ {AT_QMTCFG_VERSION, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {AT_QMTCFG_PDPCID, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {AT_QMTCFG_WILL, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {AT_QMTCFG_TIMEOUT, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {AT_QMTCFG_SESSION, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {AT_QMTCFG_KEEPALIVE, 		CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ {AT_QMTCFG_SSL, 			CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
 
 
-		//{AT_QMTOPEN_Q, 				CMD_TIMEOUT_75000, 		FSM_TIMEOUT_100},
-		{AT_QMTOPEN_A, 				CMD_TIMEOUT_75000, 		FSM_TIMEOUT_100},
-		{AT_QMTOPEN1_Q,				CMD_TIMEOUT_75000, 		FSM_TIMEOUT_100},
-		{AT_QMTCONN_Q,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		{AT_QMTCONN_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{AT_QMTSUB_Q,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{AT_QMTSUB1_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		{AT_QMTSUB1_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{AT_QMTUNS_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{AT_QMTPUB_Q,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{AT_QMTPUB_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{MSG,						CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
-		//{AT_QMTDISC_A,						CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTOPEN_Q, 				CMD_TIMEOUT_75000, 		FSM_TIMEOUT_100},
+ {AT_QMTOPEN_A, 				CMD_TIMEOUT_75000, 		FSM_TIMEOUT_100},
+ {AT_QMTOPEN1_Q,				CMD_TIMEOUT_75000, 		FSM_TIMEOUT_100},
+ {AT_QMTCONN_Q,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ {AT_QMTCONN_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTSUB_Q,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTSUB1_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ {AT_QMTSUB1_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTUNS_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTPUB_Q,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTPUB_A,				CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{MSG,						CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
+ //{AT_QMTDISC_A,						CMD_TIMEOUT_15000, 		FSM_TIMEOUT_100},
 
-		{END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
-};*/
-
+ {END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
+ };*/
 
 static uint8_t host[32] = "broker.hivemq.com"; ///< HostName i.e. "test.mosquitto.org"//"broker.mqttdashboard.com";//
 static uint16_t port = 1883; ///< Remote port number.
@@ -267,33 +254,35 @@ static uint8_t sub_topic[32] = "topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
 static uint8_t sub_data[BUFFERSIZE_CMD];
 
-
-
+QueueHandle_t xSemaphoreSub;
 QueueHandle_t xQueuePrintConsole;
 SemaphoreHandle_t mutex;
 button_t button_down;
 SemaphoreHandle_t xSemaphoreButton;
 
 osThreadId_t printTaskHandle;
-uint32_t printTaskBuffer[ 512 ];
+uint32_t printTaskBuffer[512];
 StaticTask_t printTaskControlBlock;
 
 osThreadId_t buttonsTaskHandle;
-uint32_t buttonsTaskBuffer[ 512 ];
+uint32_t buttonsTaskBuffer[512];
 StaticTask_t buttonsTaskControlBlock;
 
 osThreadId_t connectTaskcHandleBG96;
-uint32_t connectTaskBufferBG96[ 512 ];
+uint32_t connectTaskBufferBG96[512];
 StaticTask_t connectTaskControlBlockBG96;
 
 osThreadId_t connectTaskcHandleWifi;
-uint32_t connectTaskBufferWifi[ 512 ];
+uint32_t connectTaskBufferWifi[512];
 StaticTask_t connectTaskControlBlockWifi;
 
 osThreadId_t subscribeTaskcHandle;
-uint32_t subscribeTaskBuffer[ 512 ];
+uint32_t subscribeTaskBuffer[512];
 StaticTask_t subscribeTaskControlBlock;
 
+osThreadId_t publishTaskcHandle;
+uint32_t publishTaskBuffer[512];
+StaticTask_t publishTaskControlBlock;
 
 /**
  * @brief	Check flag and set error led, increment internal state if it is needed
@@ -302,12 +291,9 @@ StaticTask_t subscribeTaskControlBlock;
  */
 static int CheckFlag(ESP8266_StatusTypeDef status, int internalState);
 
-
 static void clean_Timer(TimerHandle_t *timerT);
 
-
-void initTasks(){
-
+void initTasks() {
 
 	//button set
 	button_down.GPIOx = BTN_GPIO_Port;
@@ -317,74 +303,68 @@ void initTasks(){
 #if WRITE_CHAR
 	xQueuePrintConsole = xQueueCreate(100, sizeof(uint8_t));
 #else
-	xQueuePrintConsole = xQueueCreate(CONSOLE_QUEUE_LENGTH, sizeof(data_print_console_t));
+	xQueuePrintConsole = xQueueCreate(CONSOLE_QUEUE_LENGTH,
+			sizeof(data_print_console_t));
 #endif
 
 	mutex = xSemaphoreCreateMutex();
 	xSemaphoreButton = xSemaphoreCreateCounting(10, 0);
 
-
-	if (xQueuePrintConsole == NULL){
+	if (xQueuePrintConsole == NULL) {
 		printf("error creacion de cola\r\n");
-		while(1);
+		while (1)
+			;
 	}
 
-	if (mutex == NULL){
+	if (mutex == NULL) {
 		printf("error creacion de cola\r\n");
-		while(1);
+		while (1)
+			;
 	}
 
-	if (xSemaphoreButton == NULL){
+	if (xSemaphoreButton == NULL) {
 		printf("error creacion de semaforo botones\r\n");
-		while(1);
+		while (1)
+			;
 	}
 
 	//Atributes defined for print console task
-	osThreadAttr_t printConsoleTask_attributes = {
-	    .name = "printConsole",
-	    .stack_mem = &printTaskBuffer[0],
-	    .stack_size = sizeof(printTaskBuffer),
-	    .cb_mem = &printTaskControlBlock,
-	    .cb_size = sizeof(printTaskControlBlock),
-	    .priority = (osPriority_t) osPriorityAboveNormal,
-	  };
+	osThreadAttr_t printConsoleTask_attributes = { .name = "printConsole",
+			.stack_mem = &printTaskBuffer[0], .stack_size =
+					sizeof(printTaskBuffer), .cb_mem = &printTaskControlBlock,
+			.cb_size = sizeof(printTaskControlBlock), .priority =
+					(osPriority_t) osPriorityAboveNormal, };
 
 	//Atributes defined for buttons task
-	osThreadAttr_t buttonsTask_attributes = {
-		    .name = "buttons",
-		    .stack_mem = &buttonsTaskBuffer[0],
-		    .stack_size = sizeof(buttonsTaskBuffer),
-		    .cb_mem = &buttonsTaskControlBlock,
-		    .cb_size = sizeof(buttonsTaskControlBlock),
-		    .priority = (osPriority_t) osPriorityAboveNormal,
-		  };
+	osThreadAttr_t buttonsTask_attributes = { .name = "buttons", .stack_mem =
+			&buttonsTaskBuffer[0], .stack_size = sizeof(buttonsTaskBuffer),
+			.cb_mem = &buttonsTaskControlBlock, .cb_size =
+					sizeof(buttonsTaskControlBlock), .priority =
+					(osPriority_t) osPriorityAboveNormal, };
 
 	//Atributes defined for connect bg96 task
-	osThreadAttr_t connectTask_attributesBG96 = {
-			    .name = "connectBG96",
-			    .stack_mem = &connectTaskBufferBG96[0],
-			    .stack_size = sizeof(connectTaskBufferBG96),
-			    .cb_mem = &connectTaskControlBlockBG96,
-			    .cb_size = sizeof(connectTaskControlBlockBG96),
-			    .priority = (osPriority_t) osPriorityAboveNormal,
-			  };
+	osThreadAttr_t connectTask_attributesBG96 = { .name = "connectBG96",
+			.stack_mem = &connectTaskBufferBG96[0], .stack_size =
+					sizeof(connectTaskBufferBG96), .cb_mem =
+					&connectTaskControlBlockBG96, .cb_size =
+					sizeof(connectTaskControlBlockBG96), .priority =
+					(osPriority_t) osPriorityAboveNormal, };
 
 	//Atributes defined for connect wifi task
-	osThreadAttr_t connectTask_attributesWifi = {
-				    .name = "connectWifi",
-				    .stack_mem = &connectTaskBufferWifi[0],
-				    .stack_size = sizeof(connectTaskBufferWifi),
-				    .cb_mem = &connectTaskControlBlockWifi,
-				    .cb_size = sizeof(connectTaskControlBlockWifi),
-				    .priority = (osPriority_t) osPriorityAboveNormal,
-				  };
+	osThreadAttr_t connectTask_attributesWifi = { .name = "connectWifi",
+			.stack_mem = &connectTaskBufferWifi[0], .stack_size =
+					sizeof(connectTaskBufferWifi), .cb_mem =
+					&connectTaskControlBlockWifi, .cb_size =
+					sizeof(connectTaskControlBlockWifi), .priority =
+					(osPriority_t) osPriorityAboveNormal, };
 
-	osThreadId_t res = osThreadNew(printConsoleTask, NULL, &printConsoleTask_attributes);
+	osThreadId_t res = osThreadNew(printConsoleTask, NULL,
+			&printConsoleTask_attributes);
 	if (res == NULL) {
 		printf("error creacion de tarea\r\n");
-		while(1);
+		while (1)
+			;
 	}
-
 
 #if ACTIVATE_WIFI
 	res = osThreadNew(connectWifiTask, NULL, &connectTask_attributesWifi);
@@ -392,10 +372,11 @@ void initTasks(){
 		printf("error creacion de tarea connect wifi\r\n");
 	}
 #else
-	res = osThreadNew(connectBG96Task,  NULL, &connectTask_attributesBG96);
-		if (res == NULL) {
-			printf("error creacion de tarea connect bg96\r\n");
-			while(1);
+	res = osThreadNew(connectBG96Task, NULL, &connectTask_attributesBG96);
+	if (res == NULL) {
+		printf("error creacion de tarea connect bg96\r\n");
+		while (1)
+			;
 	}
 #endif
 
@@ -404,12 +385,10 @@ void initTasks(){
 		printf("error creacion de tarea buttons\r\n");
 	}
 
-
 }
 
-
 #if DEBUG
-	#if WRITE_CHAR
+#if WRITE_CHAR
 	void printConsoleTask(void *argument){
 		int8_t dataQueuePrint;
 
@@ -422,143 +401,171 @@ void initTasks(){
 		}
 	}
 	#else
-	void printConsoleTask(void *argument){
-		data_print_console_t dataQueuePrint;
-		for(;;){
-			xQueueReceive(xQueuePrintConsole, &dataQueuePrint, portMAX_DELAY);
-			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS); //taskENTER_CRITICAL(); //
-			printf("%s", dataQueuePrint.data_cmd);
-			xSemaphoreGive(mutex); //taskEXIT_CRITICAL(); //
-			vTaskDelay(1 / portTICK_PERIOD_MS);
-		}
+void printConsoleTask(void *argument) {
+	data_print_console_t dataQueuePrint;
+	for (;;) {
+		xQueueReceive(xQueuePrintConsole, &dataQueuePrint, portMAX_DELAY);
+		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS); //taskENTER_CRITICAL(); //
+		printf("%s", dataQueuePrint.data_cmd);
+		xSemaphoreGive(mutex); //taskEXIT_CRITICAL(); //
+		vTaskDelay(1 / portTICK_PERIOD_MS);
 	}
-	#endif
+}
+#endif
 #endif
 
-
-static int CheckFlag(ESP8266_StatusTypeDef status, int internalState){
+static int CheckFlag(ESP8266_StatusTypeDef status, int internalState) {
 	if (status == ESP8266_OK) {
 		// To the next state.
 		internalState++;
 		HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-	}
-	else{
+	} else {
 		if (status == ESP8266_ERROR)
 			HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
 	}
 	return internalState;
 }
 
-void connectWifiTask(void *argument){
-		ESP8266_StatusTypeDef Status;
-		static int internalState = 0;
-		TickType_t t = xTaskGetTickCount();
-		uint8_t contador = 0;
-		HAL_UART_F_Init();
-		printf("Conectando a wifi, Espere por favor.. \r\n");
-		for (;;) {
-			switch (internalState) {
-			case 0:
-				/* AGREGAR MUTEX */
-				Status = ESP_ConnectWifi(true, WIFI_AP_SSID, WIFI_AP_PASS);
-				/* SACAR MUTEX */
+void connectWifiTask(void *argument) {
+	ESP8266_StatusTypeDef Status;
+	static int internalState = 0;
+	TickType_t t = xTaskGetTickCount();
+	uint8_t contador = 0;
+	HAL_UART_F_Init();
+	printf("Conectando a wifi, Espere por favor.. \r\n");
+	for (;;) {
+		switch (internalState) {
+		case 0:
+			/* AGREGAR MUTEX */
+			Status = ESP_ConnectWifi(true, WIFI_AP_SSID, WIFI_AP_PASS);
+			/* SACAR MUTEX */
 
-				internalState = CheckFlag(Status, internalState);
+			internalState = CheckFlag(Status, internalState);
 
-				break;
-			case 1:
-				// Wait 1sec.
-				Status = ESP_Delay(1000);
+			break;
+		case 1:
+			// Wait 1sec.
+			//Status = Delay_t(1000);
+			osDelay(1000 / portTICK_PERIOD_MS);
+			internalState++;
 
-				internalState = CheckFlag(Status, internalState);
+			break;
+		case 2:
+			// Check the wifi connection status.
+			Status = ESP_IsConnectedWifi();
 
-				break;
-			case 2:
-				// Check the wifi connection status.
-				Status = ESP_IsConnectedWifi();
+			internalState = CheckFlag(Status, internalState);
 
-				internalState = CheckFlag(Status, internalState);
+			break;
+		case 3:
+			// Start TCP connection.
 
-				break;
-			case 3:
-				// Start TCP connection.
+			/* AGREGAR MUTEX */
+			Status = ESP_StartTCP(host, port, keepalive, sslenable);
+			/* SACAR MUTEX */
+			osDelay(500 / portTICK_PERIOD_MS);
+			internalState = CheckFlag(Status, internalState);
+			break;
+		case 4:
+			// Send the mqtt data.
 
-				/* AGREGAR MUTEX */
-				Status = ESP_StartTCP(host, port, keepalive, sslenable);
-				/* SACAR MUTEX */
+			/* AGREGAR MUTEX */
+			Status = mqtt_Connect();
 
-				internalState = CheckFlag(Status, internalState);
-				break;
-			case 4:
-				// Send the mqtt data.
+			/* SACAR MUTEX */
 
-				/* AGREGAR MUTEX */
-				Status = mqtt_Connect();
-				/* SACAR MUTEX */
+			internalState = CheckFlag(Status, internalState);
+			osDelay(500 / portTICK_PERIOD_MS);
 
-				internalState = CheckFlag(Status, internalState);
-				break;
-			case 5:
+			break;
+		case 5:
 
-				/* AGREGAR MUTEX */
-//				Status = mqtt_SubscriberPacket(sub_topic);
-//				/* SACAR MUTEX */
-//				if(Status == ESP8266_OK){
-//					//Atributes defined for connect wifi task
-//					osThreadAttr_t subscribeTask_attributes = {
-//							.name = "connectWifi",
-//							.stack_mem = &subscribeTaskBuffer[0],
-//							.stack_size = sizeof(subscribeTaskBuffer),
-//							.cb_mem = &subscribeTaskControlBlock,
-//							.cb_size = sizeof(subscribeTaskControlBlock),
-//							.priority = (osPriority_t) osPriorityAboveNormal,
-//					};
-//
-//					osThreadId_t res = osThreadNew(subscribeTask, NULL, &subscribeTask_attributes);
-//					if (res == NULL) {
-//						printf("error creacion de tarea\r\n");
-//						while(1);
-//					}
-//				}
-//
-//				internalState = CheckFlag(Status, internalState);
+			/* AGREGAR MUTEX */
+			Status = mqtt_SubscriberPacket(sub_topic);
+			/* SACAR MUTEX */
+			if (Status == ESP8266_OK) {
+				xSemaphoreSub = xSemaphoreCreateBinary();
+				if (xSemaphoreSub != NULL) {
+					osThreadId_t res;
+					//Atributes defined for connect wifi task
+					osThreadAttr_t subscribeTask_attributes = { .name =
+							"connectWifi", .stack_mem = &subscribeTaskBuffer[0],
+							.stack_size = sizeof(subscribeTaskBuffer), .cb_mem =
+									&subscribeTaskControlBlock, .cb_size =
+									sizeof(subscribeTaskControlBlock),
+							.priority = (osPriority_t) osPriorityAboveNormal1, };
 
-				internalState++;
-				//vTaskDelayUntil(&t, pdMS_TO_TICKS(5000));
-				vTaskDelay(2000 / portTICK_PERIOD_MS);
+					res = osThreadNew(subscribeTask, NULL,
+							&subscribeTask_attributes);
+					if (res == NULL) {
+						printf("error creacion de tarea\r\n");
+						while (1)
+							;
+					}
 
-				break;
-			case 6:
-				xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
-				memset(pub_data, '\0', BUFFERSIZE_CMD);
-				sprintf((char*)pub_data, "Contador: %d%c%c", contador,'\r', '\n');
-				Status = mqtt_Publisher(pub_topic, pub_data, strlen((char*)pub_data));
-				//vTaskDelayUntil(&t, pdMS_TO_TICKS(2000));
-				contador++;
-				vTaskDelay(2000 / portTICK_PERIOD_MS);
-				break;
+					//Atributes defined for connect wifi task
+					osThreadAttr_t publishTask_attributes = { .name =
+							"connectWifi", .stack_mem = &publishTaskBuffer[0],
+							.stack_size = sizeof(publishTaskBuffer), .cb_mem =
+									&publishTaskControlBlock, .cb_size =
+									sizeof(publishTaskControlBlock), .priority =
+									(osPriority_t) osPriorityAboveNormal, };
 
-			default:
-				break;
+					res = osThreadNew(publishTask, NULL,
+							&publishTask_attributes);
+					if (res == NULL) {
+						printf("error creacion de tarea\r\n");
+						while (1)
+							;
+					}
+				}
 			}
-			osDelay(1 / portTICK_PERIOD_MS);
+
+			internalState = CheckFlag(Status, internalState);
+
+			//vTaskDelayUntil(&t, pdMS_TO_TICKS(5000));
+			osDelay(500 / portTICK_PERIOD_MS);
+
+			break;
+		case 6:
+			xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
+//				memset(pub_data, '\0', BUFFERSIZE_CMD);
+//				sprintf((char*)pub_data, "Contador:%d%c%c", contador,'\r', '\n');
+//				Status = mqtt_Publisher(pub_topic, pub_data, strlen((char*)pub_data));
+//				//vTaskDelayUntil(&t, pdMS_TO_TICKS(2000));
+//				contador++;
+//				vTaskDelay(2000 / portTICK_PERIOD_MS);
+			break;
+
+		default:
+			break;
 		}
+		osDelay(1 / portTICK_PERIOD_MS);
+	}
 
 }
 
+void publishTask(void *argument) {
+
+	uint8_t contador = 0;
+	for (;;) {
+		memset(pub_data, '\0', BUFFERSIZE_CMD);
+		sprintf((char*) pub_data, "Contador: %d%c%c", contador, '\r', '\n');
+		mqtt_Publisher(pub_topic, pub_data, strlen((char*) pub_data));
+		contador++;
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
+}
 
 void subscribeTask(void *argument) {
 	ESP8266_StatusTypeDef Status;
 	uint32_t RetLength = 0;
 
 	for (;;) {
-
-		//xSemaphoreTake(mutex, 20000);
+		xSemaphoreTake(xSemaphoreSub, portMAX_DELAY);
 		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
-		//xSemaphoreGive(mutex);
-
 		if (Status == ESP8266_OK) {
-			if (RetLength != 0){
+			if (RetLength != 0) {
 				sub_data[RetLength] = '\0';
 				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
 			}
@@ -567,8 +574,7 @@ void subscribeTask(void *argument) {
 	}
 }
 
-
-void connectBG96Task(void *argument){
+void connectBG96Task(void *argument) {
 	//driver_uart_t * uart = (driver_uart_t *)argument;
 	ESP8266_StatusTypeDef Status;
 	int internalState = 1;
@@ -579,14 +585,16 @@ void connectBG96Task(void *argument){
 	TimerHandle_t timer_timeout_cmd;
 	Timer_StatusTypedef cmd_timeout_status = TIMER_STOPPED;
 
-	if(Timer_Create(&timer_timeout_cmd, 1000, pdFALSE, &cmd_timeout_status) == TIMER_ERROR){
+	if (Timer_Create(&timer_timeout_cmd, 1000, pdFALSE, &cmd_timeout_status)
+			== TIMER_ERROR) {
 		printf("error creacion de timer\r\n");
-		while(1);
+		while (1)
+			;
 	}
 
 	for (;;) {
 
-		if(cmd_timeout_status == TIMER_TIMEOUT){
+		if (cmd_timeout_status == TIMER_TIMEOUT) {
 			cmd_timeout_status = TIMER_STOPPED;
 			internalState = 0;
 			indice = 0;
@@ -596,34 +604,35 @@ void connectBG96Task(void *argument){
 		case 0:
 			modem_status = SysCtrl_BG96_power_off();
 			//xSemaphoreGive(mutex);
-			if(modem_status == SCSTATUS_OK){
+			if (modem_status == SCSTATUS_OK) {
 				internalState++;
 			}
 
-		break;
+			break;
 		case 1:
 			//xSemaphoreTake(mutex, portMAX_DELAY);
 			modem_status = SysCtrl_BG96_power_on();
 			//xSemaphoreGive(mutex);
-			if(modem_status == SCSTATUS_OK){
+			if (modem_status == SCSTATUS_OK) {
 				internalState++;
 				HAL_UART_F_Init();
-			}
-			else{
+			} else {
 				modem_status = SysCtrl_BG96_power_off();
 			}
 
 			break;
 		case 2:
 			//xSemaphoreTake(mutex, portMAX_DELAY);
-			Status = ConnectTCP(BG96_COMMAND_INIT[indice].cmd, strlen((char*)BG96_COMMAND_INIT[indice].cmd), BG96_COMMAND_INIT[indice].cmd_timeout);
+			Status = ConnectTCP(BG96_COMMAND_INIT[indice].cmd,
+					strlen((char*) BG96_COMMAND_INIT[indice].cmd),
+					BG96_COMMAND_INIT[indice].response,
+					BG96_COMMAND_INIT[indice].cmd_timeout);
 			//xSemaphoreGive(mutex);
 			osDelay(100 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				indice++;
-			}
-			else{
-				if (Status == ESP8266_EOA){
+			} else {
+				if (Status == ESP8266_EOA) {
 					internalState++;
 					indice = 0;
 				}
@@ -631,47 +640,51 @@ void connectBG96Task(void *argument){
 			break;
 		case 3:
 			//xSemaphoreTake(mutex, portMAX_DELAY);
-			modem_status = SysCtrl_BG96_sim_select(SC_MODEM_SIM_SOCKET_0);//SC_STM32_SIM_2//SC_MODEM_SIM_SOCKET_0//SC_MODEM_SIM_ESIM_1
+			modem_status = SysCtrl_BG96_sim_select(SC_MODEM_SIM_SOCKET_0); //SC_STM32_SIM_2//SC_MODEM_SIM_SOCKET_0//SC_MODEM_SIM_ESIM_1
 			//xSemaphoreGive(mutex);
-			(void)osDelay(100);  // waiting for 10ms after sim selection
-			if(modem_status == SCSTATUS_OK){
+			(void) osDelay(100);  // waiting for 10ms after sim selection
+			if (modem_status == SCSTATUS_OK) {
 				internalState++;
 			}
 			break;
 		case 4:
 			//xSemaphoreTake(mutex, portMAX_DELAY);
-			Status = ConnectTCP(BG96_COMMAND_1[indice].cmd, strlen((char*)BG96_COMMAND_1[indice].cmd), BG96_COMMAND_1[indice].cmd_timeout);
+			Status = ConnectTCP(BG96_COMMAND_1[indice].cmd,
+					strlen((char*) BG96_COMMAND_1[indice].cmd),
+					BG96_COMMAND_1[indice].response,
+					BG96_COMMAND_1[indice].cmd_timeout);
 			//xSemaphoreGive(mutex);
 			osDelay(100 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				indice++;
 				clean_Timer(&timer_timeout_cmd);
-			}
-			else{
-				if(Status == ESP8266_EOA){
+			} else {
+				if (Status == ESP8266_EOA) {
 					clean_Timer(&timer_timeout_cmd);
 					internalState++;
 					indice = 0;
 					break;
-				}
-				else{//if there is an error, timer startup
+				} else {  //if there is an error, timer startup
 					osDelay(3000 / portTICK_PERIOD_MS);
-					if(cmd_timeout_status == TIMER_STOPPED){
-						Timer_Change_Period(&timer_timeout_cmd, BG96_COMMAND_1[indice].fsm_timeout);
+					if (cmd_timeout_status == TIMER_STOPPED) {
+						Timer_Change_Period(&timer_timeout_cmd,
+								BG96_COMMAND_1[indice].fsm_timeout);
 					}
 				}
 			}
 			break;
 		case 5:
 			//xSemaphoreTake(mutex, portMAX_DELAY);
-			Status = ConnectTCP(BG96_COMMAND_2[indice].cmd, strlen((char*)BG96_COMMAND_2[indice].cmd), BG96_COMMAND_2[indice].cmd_timeout);
+			Status = ConnectTCP(BG96_COMMAND_2[indice].cmd,
+					strlen((char*) BG96_COMMAND_2[indice].cmd),
+					BG96_COMMAND_2[indice].response,
+					BG96_COMMAND_2[indice].cmd_timeout);
 			//xSemaphoreGive(mutex);
 			osDelay(200 / portTICK_PERIOD_MS);
-			if (Status == ESP8266_ERROR) {	//get an error because the firmware is not up today but this command is needed
+			if (Status == ESP8266_OK) {	//get an error because the firmware is not up today but this command is needed
 				indice++;
-			}
-			else{
-				if(Status == ESP8266_EOA){
+			} else {
+				if (Status == ESP8266_EOA) {
 					internalState++;
 					indice = 0;
 					break;
@@ -680,37 +693,39 @@ void connectBG96Task(void *argument){
 			break;
 		case 6:
 			///xSemaphoreTake(mutex, portMAX_DELAY);
-			Status = ConnectTCP(BG96_COMMAND_3[indice].cmd, strlen((char*)BG96_COMMAND_3[indice].cmd), BG96_COMMAND_3[indice].cmd_timeout);
+			Status = ConnectTCP(BG96_COMMAND_3[indice].cmd,
+					strlen((char*) BG96_COMMAND_3[indice].cmd),
+					BG96_COMMAND_3[indice].response,
+					BG96_COMMAND_3[indice].cmd_timeout);
 			//xSemaphoreGive(mutex);
 			osDelay(100 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				indice++;
 				clean_Timer(&timer_timeout_cmd);
-			}
-			else{
-				if(Status == ESP8266_EOA){
+			} else {
+				if (Status == ESP8266_EOA) {
 					clean_Timer(&timer_timeout_cmd);
 					internalState++;
 					indice = 0;
 					break;
-				}
-				else{//if there is an error, timer startup
+				} else {	//if there is an error, timer startup
 					osDelay(3000 / portTICK_PERIOD_MS);
-					if(cmd_timeout_status == TIMER_STOPPED){
-						Timer_Change_Period(&timer_timeout_cmd, BG96_COMMAND_3[indice].fsm_timeout);
+					if (cmd_timeout_status == TIMER_STOPPED) {
+						Timer_Change_Period(&timer_timeout_cmd,
+								BG96_COMMAND_3[indice].fsm_timeout);
 					}
 				}
 			}
 			break;
 		case 7:
 			//xSemaphoreTake(mutex, portMAX_DELAY);
-			Status = MQTTOpen(host, port, tcpconnectID, vsn, cid, clean_session, keepalive, sslenable);
+			Status = MQTTOpen(host, port, tcpconnectID, vsn, cid, clean_session,
+					keepalive, sslenable);
 			//xSemaphoreGive(mutex);
 			osDelay(3000 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				internalState++;
-			}
-			else{
+			} else {
 				osDelay(1000 / portTICK_PERIOD_MS);
 			}
 			break;
@@ -722,8 +737,7 @@ void connectBG96Task(void *argument){
 			if (Status == ESP8266_OK) {
 				internalState++;
 				//internalState++;
-			}
-			else{
+			} else {
 				osDelay(1000 / portTICK_PERIOD_MS);
 			}
 			break;
@@ -734,8 +748,7 @@ void connectBG96Task(void *argument){
 			osDelay(5000 / portTICK_PERIOD_MS);
 			if (Status == ESP8266_OK) {
 				internalState++;
-			}
-			else{
+			} else {
 				osDelay(1000 / portTICK_PERIOD_MS);
 			}
 			break;
@@ -743,8 +756,10 @@ void connectBG96Task(void *argument){
 			//xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
 			//xSemaphoreTake(mutex, portMAX_DELAY);
 			memset(pub_data, '\0', BUFFERSIZE_CMD);
-			sprintf((char*)pub_data, "Contador: %d%c%c%c", contador, CTRL(z),'\r', '\n');
-			Status = PubData(tcpconnectID, msgID, qos, retain, pub_topic, pub_data, strlen((char*) pub_data));
+			sprintf((char*) pub_data, "Contador: %d%c%c%c", contador, CTRL(z),
+					'\r', '\n');
+			Status = PubData(tcpconnectID, msgID, qos, retain, pub_topic,
+					pub_data, strlen((char*) pub_data));
 			//xSemaphoreGive(mutex);
 			osDelay(2000 / portTICK_PERIOD_MS);
 			contador++;
@@ -757,28 +772,26 @@ void connectBG96Task(void *argument){
 	}
 }
 
-static void clean_Timer(TimerHandle_t *timerT){
+static void clean_Timer(TimerHandle_t *timerT) {
 	Timer_Stop(timerT);
 }
 
-void buttonsTask(void *argument){
+void buttonsTask(void *argument) {
 	fsmButtonInit(&button_down);
 	for (;;) {
 		//update FSM button
 		fsmButtonUpdate(&button_down);
 
-		if(button_down.released){
+		if (button_down.released) {
 			xSemaphoreGive(xSemaphoreButton);
 
 		}
 
-
-
 		/*if (cmd_timeout_status == ESP8266_TIMEOUT){
-			cmd_timeout_status = ESP8266_OK;
-			HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+		 cmd_timeout_status = ESP8266_OK;
+		 HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 
-		}*/
+		 }*/
 
 		vTaskDelay(1 / portTICK_PERIOD_MS);
 

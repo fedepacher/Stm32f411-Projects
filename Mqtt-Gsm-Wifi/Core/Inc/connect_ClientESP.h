@@ -28,12 +28,7 @@
 #define ESP_LONG_TIME_OUT         	20000UL /* in ms */
 
 
-/*
- * @brief Creates non-blocking delay.
- * @param delay_ms Delay time in ms.
- * @return SUCCESS, BUSY.
- */
-ESP8266_StatusTypeDef ESP_Delay(const uint16_t delay_ms);
+
 
 /*
  * @brief Connect to AP.
@@ -69,15 +64,6 @@ ESP8266_StatusTypeDef ESP_StartTCP(const uint8_t * host, const uint16_t port, co
  */
 ESP8266_StatusTypeDef ESP_SendData(uint8_t* pData, uint32_t Length);
 
-/*
- * @brief Receive data over the wifi connection.
- * @param  Buffer: the buffer to receive
- * @param  Length: the Buffer's data size.
- * @param  RetLength: the Buffer's data length received.
- * @retval Returns ESP8266_OK on success and ESP8266_ERROR otherwise.
- */
-ESP8266_StatusTypeDef ESP_ReceiveData(uint8_t* Buffer, uint32_t Length,
-		uint32_t* RetLength);
 
 /*
  * @brief Reset Module ESP.

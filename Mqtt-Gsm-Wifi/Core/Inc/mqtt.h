@@ -8,7 +8,8 @@
 #ifndef INC_MQTT_H_
 #define INC_MQTT_H_
 
-#include "connect_ClientESP.h"
+#include "general_defs.h"
+#include "stdio.h"
 
 
 #define CONNECTION_KEEPALIVE_S	60UL

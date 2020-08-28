@@ -10,7 +10,7 @@
 
 #define	ACTIVATE_WIFI			1
 #define DEBUG					1
-#define WRITE_CHAR				1
+#define WRITE_CHAR				0
 
 #define END_OF_ARRAY			"EOA"
 
@@ -37,6 +37,7 @@
 
 //CMD maximun timeout
 #define CMD_TIMEOUT_300			300U
+#define CMD_TIMEOUT_3000		3000U
 #define CMD_TIMEOUT_5000		5000U
 #define CMD_TIMEOUT_15000		15000U
 #define CMD_TIMEOUT_75000		75000U

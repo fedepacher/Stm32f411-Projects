@@ -12,8 +12,9 @@
 
 void initTasks();
 void printConsoleTask(void *argument);
-void connectBG96Task(void *argument);
+void connectTask(void *argument);
 void connectWifiTask(void *argument);
+void ledTask(void *argument);
 void buttonsTask(void *argument);
 void timerHandlerTask(void *argument);
 void subscribeTask(void *argument);

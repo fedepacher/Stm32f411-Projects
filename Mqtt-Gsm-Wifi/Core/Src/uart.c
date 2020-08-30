@@ -10,12 +10,14 @@
 #include "stdio.h"
 
 
+
 /* Private valirable ---------------------------------------------------------*/
-extern UART_HandleTypeDef huart1;	//--
-extern UART_HandleTypeDef huart2;	//connected to bg96
-extern UART_HandleTypeDef huart6;	//connected to esp8266
+//extern UART_HandleTypeDef huart1;	//--
+//extern UART_HandleTypeDef huart2;	//connected to bg96
+//extern UART_HandleTypeDef huart6;	//connected to esp8266
 extern QueueHandle_t xQueuePrintConsole;
 extern QueueHandle_t xSemaphoreSub;
+
 data_print_console_t data;
 static uint8_t indice = 0;
 /* Private function prototypes -----------------------------------------------*/
@@ -41,6 +43,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		}
 		// Receive one byte in interrupt mode
 		HAL_UART_Receive_IT(huart, (uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
+
+
 		if(xSemaphoreSub != NULL){//WAKEUP SUBSCRIBE TASK
 			if(dato == '\n')
 				xSemaphoreGiveFromISR(xSemaphoreSub, &xHigherPriorityTaskWoken);
@@ -68,8 +72,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	    port specific. */
 	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 
-
 }
+
+
+
 
 /**
  * @brief  Function called when error happens on the UART.
@@ -80,18 +86,16 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 	//WIFI_Handler();
 }
 
-void HAL_UART_F_Init() {
+void HAL_UART_F_Init(UART_HandleTypeDef *huart) {
 
 		WiFiRxBuffer.head = 0;
 		WiFiRxBuffer.tail = 0;
 
-#if ACTIVATE_WIFI
-		HAL_UART_Receive_IT(&huart6,
-			(uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
-#else
-		HAL_UART_Receive_IT(&huart2,
+//		HAL_UART_Receive_IT(&huart6,
+//			(uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
+		HAL_UART_Receive_IT(huart,
 					(uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
-#endif
+
 
 }
 
@@ -99,23 +103,21 @@ void HAL_UART_F_Init() {
 
 void HAL_UART_F_DeInit(void) {
 	/* Reset USART configuration to default */
-	HAL_UART_DeInit(&huart1);
-	HAL_UART_DeInit(&huart2);
-	HAL_UART_DeInit(&huart6);
+//	HAL_UART_DeInit(&huart1);
+//	HAL_UART_DeInit(&huart2);
+//	HAL_UART_DeInit(&huart6);
 }
 
-int8_t HAL_UART_F_Send(const char* Buffer, const uint8_t Length) {
+int8_t HAL_UART_F_Send(UART_HandleTypeDef *huart, const char* Buffer, const uint8_t Length) {
 	/* It is using a blocking call to ensure that the AT commands were correctly sent. */
 
-#if ACTIVATE_WIFI
-	if (HAL_UART_Transmit_IT(&huart6, (uint8_t*) Buffer, Length) != HAL_OK){
+	if (HAL_UART_Transmit_IT(huart, (uint8_t*) Buffer, Length) != HAL_OK){
 		return -1;
 	}
-#else
-	if (HAL_UART_Transmit_IT(&huart2, (uint8_t*) Buffer, Length) != HAL_OK){
-		return -1;
-	}
-#endif
+//	if (HAL_UART_Transmit_IT(&huart2, (uint8_t*) Buffer, Length) != HAL_OK){
+//		return -1;
+//	}
+
 	return 0;
 }
 

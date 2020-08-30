@@ -10,6 +10,7 @@
 
 #include "general_defs.h"
 #include "stdio.h"
+#include "ESP_Client.h"
 
 
 #define CONNECTION_KEEPALIVE_S	60UL
@@ -45,9 +46,10 @@ ESP8266_StatusTypeDef mqtt_Subscriber();
 /*
  * @brief Send subcribe packet to the broker mqtt.
  * @param topic topic to be subcribed
+ * @param topic_length	topic length
  * @return ESP8266_OK if it is ok otherwise ESP8266_ERROR
  */
-ESP8266_StatusTypeDef mqtt_SubscriberPacket(uint8_t *topic);
+ESP8266_StatusTypeDef mqtt_SubscriberPacket(uint8_t *topic, uint8_t topic_length);
 
 /*
  * @brief Receive packets from the broker mqtt.

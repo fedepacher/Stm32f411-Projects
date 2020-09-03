@@ -232,6 +232,7 @@ AT_OK_STRING, CMD_TIMEOUT_150000, FSM_TIMEOUT_150000 },
  {END_OF_ARRAY,				CMD_TIMEOUT_300, 		FSM_TIMEOUT_100},
  };*/
 
+extern UART_HandleTypeDef huart1;	//connected to bg96
 extern UART_HandleTypeDef huart2;	//connected to bg96
 extern UART_HandleTypeDef huart6;	//connected to esp8266
 
@@ -326,7 +327,8 @@ void initTasks() {
 	button_down.GPIOx = BTN_GPIO_Port;
 	button_down.GPIO_Pin = BTN_Pin;
 
-	//HAL_UART_F_Init();
+	//HAL_UART_F_Init(&huart1);
+
 #if WRITE_CHAR
 	xQueuePrintConsole = xQueueCreate(100, sizeof(uint8_t));
 #else

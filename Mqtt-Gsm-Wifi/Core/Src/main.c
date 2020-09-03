@@ -29,7 +29,6 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include <general_defs.h>
 #include "main.h"
 #include "cmsis_os.h"
 
@@ -177,6 +176,8 @@ int main(void)
 
     printf("Iniciando\r\n");//simepre tiene que estar un primer printf para que funcione bien
     printf("Espere...\r\n");
+    //uint8_t data[]="hola";
+    //HAL_UART_Transmit_IT(&huart1, data, 4);
 
     initTasks();
   /* add threads, ... */

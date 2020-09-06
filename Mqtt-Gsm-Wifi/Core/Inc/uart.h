@@ -27,6 +27,7 @@
 
  /* Public struct ---------------------------------------------------------*/
 	RingBuffer_t WiFiRxBuffer;
+	RingBuffer_t ControlBuffer;
 
 typedef struct{
 	UART_HandleTypeDef uart;
@@ -40,10 +41,21 @@ typedef struct{
   * @brief  Uart Initalization.
   *         This function inits the UART interface to deal with the esp8266,
   *         then starts asynchronous listening on the RX port.
-  * @param None
+  * @param huart	uart to be initialized
+  * @param circularBuffer	circular buffer to be initialized
   * @retval None.
   */
-void HAL_UART_F_Init();
+void HAL_UART_F_Init(UART_HandleTypeDef *huart);
+
+/**
+ * @brief  Uart Initalization.
+ *         This function inits the UART interface to deal with the esp8266,
+ *         then starts asynchronous listening on the RX port.
+ * @param huart	uart to be initialized
+ * @param circularBuffer	circular buffer to be initialized
+ * @retval None.
+ */
+void HAL_UART1_F_Init(UART_HandleTypeDef *huart);
 
 /**
  * @brief  Uart Deinitialization.

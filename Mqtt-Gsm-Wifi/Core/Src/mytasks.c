@@ -268,7 +268,7 @@ static const uint8_t retain = 0;
 static uint8_t pub_topic[32] = "topic/pub";
 static uint8_t sub_topic[32] = "topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
-//static uint8_t sub_data[BUFFERSIZE_CMD];
+static uint8_t sub_data[BUFFERSIZE_CMD];
 
 enum connection_t {
 	WIFI = 0, GSM = 1
@@ -283,13 +283,17 @@ button_t button_down;
 SemaphoreHandle_t xSemaphoreButton;
 SemaphoreHandle_t xSemaphoreMutexUart;
 SemaphoreHandle_t xSemaphorePublish;
+SemaphoreHandle_t xSemaphoreGSM;
+SemaphoreHandle_t xSemaphoreWIFI;
+SemaphoreHandle_t xSemaphoreControl;
+
 
 osThreadId_t printTaskHandle;
-uint32_t printTaskBuffer[512];
+uint32_t printTaskBuffer[256];
 StaticTask_t printTaskControlBlock;
 
 osThreadId_t buttonsTaskHandle;
-uint32_t buttonsTaskBuffer[512];
+uint32_t buttonsTaskBuffer[128];
 StaticTask_t buttonsTaskControlBlock;
 
 osThreadId_t connectTaskcHandle;
@@ -297,15 +301,15 @@ uint32_t connectTaskBuffer[512];
 StaticTask_t connectTaskControlBlock;
 
 osThreadId_t connectWifiTaskcHandle;
-uint32_t connectWifiTaskBuffer[512];
+uint32_t connectWifiTaskBuffer[256];
 StaticTask_t connectWifiTaskControlBlock;
 
 osThreadId_t subscribeTaskcHandle;
-uint32_t subscribeTaskBuffer[512];
+uint32_t subscribeTaskBuffer[256];
 StaticTask_t subscribeTaskControlBlock;
 
 osThreadId_t publishTaskcHandle;
-uint32_t publishTaskBuffer[512];
+uint32_t publishTaskBuffer[256];
 StaticTask_t publishTaskControlBlock;
 
 osThreadId_t ledTaskcHandle;
@@ -336,10 +340,14 @@ void initTasks() {
 			sizeof(data_print_console_t));
 #endif
 
-	mutex = xSemaphoreCreateMutex();
-	xSemaphoreMutexUart = xSemaphoreCreateMutex();
-	xSemaphoreButton = xSemaphoreCreateCounting(10, 0);
+	mutex = xSemaphoreCreateMutex();							//mutex to handle print console
+	xSemaphoreMutexUart = xSemaphoreCreateMutex();				//utex to handle uart
+	xSemaphoreButton = xSemaphoreCreateCounting(10, 0);			//semaphore ccounting to catch button
 	xSemaphorePublish = xSemaphoreCreateBinary();
+	xSemaphoreGSM = xSemaphoreCreateCounting(2, 0);				//semaphore counting to activate gsm connection
+	xSemaphoreWIFI = xSemaphoreCreateCounting(2, 0);			//semaphore counting to activate wifi connection
+	xSemaphoreControl = xSemaphoreCreateCounting(5, 0);			//semaphore counting to get ME1040 commands
+
 
 	if (xQueuePrintConsole == NULL) {
 		printf("error queue creation\r\n");
@@ -353,7 +361,9 @@ void initTasks() {
 			;
 	}
 
-	if (xSemaphoreButton == NULL || xSemaphorePublish == NULL) {
+	if (xSemaphoreButton == NULL || xSemaphorePublish == NULL
+				|| xSemaphoreGSM == NULL || xSemaphoreWIFI == NULL
+				|| xSemaphoreControl == NULL) {
 		printf("error buttons semaphore creation\r\n");
 		while (1)
 			;
@@ -995,7 +1005,7 @@ void connectWifiTask(void *argument) {
 			break;
 		case 6:
 			if (publishTaskcHandle == NULL) {
-				osThreadAttr_t publishTask_attributes = { .name = "connectWifi",
+				osThreadAttr_t publishTask_attributes = { .name = "publish",
 						.stack_mem = &publishTaskBuffer[0], .stack_size =
 								sizeof(publishTaskBuffer), .cb_mem =
 								&publishTaskControlBlock, .cb_size =
@@ -1004,6 +1014,24 @@ void connectWifiTask(void *argument) {
 
 				publishTaskcHandle = osThreadNew(publishTask, NULL,
 						&publishTask_attributes);
+				if (publishTaskcHandle == NULL) {
+					printf("error creacion de tarea\r\n");
+					while (1)
+						;
+				}
+			}
+			xSemaphoreSub = xSemaphoreCreateBinary();
+			if (xSemaphoreSub != NULL) {
+				//Atributes defined for connect wifi task
+				osThreadAttr_t subscribeTask_attributes = { .name =
+						"subscribe", .stack_mem = &subscribeTaskBuffer[0],
+						.stack_size = sizeof(subscribeTaskBuffer), .cb_mem =
+								&subscribeTaskControlBlock, .cb_size =
+										sizeof(subscribeTaskControlBlock),
+										.priority = (osPriority_t) osPriorityAboveNormal1, };
+
+				publishTaskcHandle = osThreadNew(subscribeTask, NULL,
+						&subscribeTask_attributes);
 				if (publishTaskcHandle == NULL) {
 					printf("error creacion de tarea\r\n");
 					while (1)
@@ -1067,10 +1095,30 @@ void publishTask(void *argument) {
 			break;
 		}
 		contador++;
-		osDelay(300 / portTICK_PERIOD_MS);
+		osDelay(1000 / portTICK_PERIOD_MS);
 
 	}
 }
+
+void subscribeTask(void *argument) {
+	ESP8266_StatusTypeDef Status;
+	uint32_t RetLength = 0;
+
+	for (;;) {
+		xSemaphoreTake(xSemaphoreSub, portMAX_DELAY);
+		xSemaphoreTake(xSemaphoreMutexUart, 20000);
+		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
+		xSemaphoreGive(xSemaphoreMutexUart);
+		if (Status == ESP8266_OK) {
+			if (RetLength != 0) {
+				sub_data[RetLength] = '\0';
+				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
+			}
+		}
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+	}
+}
+
 
 static void clean_Timer(TimerHandle_t *timerT) {
 	Timer_Stop(timerT);

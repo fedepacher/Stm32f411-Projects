@@ -17,6 +17,7 @@
 //extern UART_HandleTypeDef huart6;	//connected to esp8266
 extern QueueHandle_t xQueuePrintConsole;
 extern QueueHandle_t xSemaphoreSub;
+extern QueueHandle_t xSemaphoreControl;
 
 data_print_console_t data;
 static uint8_t indice = 0;
@@ -67,6 +68,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	#endif
 #endif
 	}
+	else{
+			if(huart->Instance == USART1){
+				uint8_t data = ControlBuffer.data[ControlBuffer.tail];
+
+				if (++ControlBuffer.tail >= BUFFERSIZE_CIRCULAR) {
+					ControlBuffer.tail = 0;
+				}
+				// Receive one byte in interrupt mode
+				HAL_UART_Receive_IT(huart, (uint8_t*) &ControlBuffer.data[ControlBuffer.tail], 1);
+				if(xSemaphoreControl != NULL){//WAKEUP SUBSCRIBE TASK
+					if(data == '\n')
+						xSemaphoreGiveFromISR(xSemaphoreControl, &xHigherPriorityTaskWoken);
+				}
+			}
+		}
 	/* If xHigherPriorityTaskWoken was set to true you
 	    we should yield.  The actual macro used here is
 	    port specific. */
@@ -99,6 +115,18 @@ void HAL_UART_F_Init(UART_HandleTypeDef *huart) {
 
 }
 
+void HAL_UART1_F_Init(UART_HandleTypeDef *huart) {
+
+	ControlBuffer.head = 0;
+	ControlBuffer.tail = 0;
+
+//		HAL_UART_Receive_IT(&huart6,
+//			(uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
+		HAL_UART_Receive_IT(huart,
+					(uint8_t*) &ControlBuffer.data[ControlBuffer.tail], 1);
+
+
+}
 
 
 void HAL_UART_F_DeInit(void) {

@@ -12,12 +12,12 @@
 
 void initTasks();
 void printConsoleTask(void *argument);
-void connectTask(void *argument);
+void connectGSMTask(void *argument);
 void connectWifiTask(void *argument);
 void ledTask(void *argument);
 void buttonsTask(void *argument);
-void timerHandlerTask(void *argument);
 void subscribeTask(void *argument);
 void publishTask(void *argument);
+void controlTask(void *argument);
 
 #endif /* INC_MYTASKS_H_ */

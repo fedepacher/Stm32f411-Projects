@@ -28,6 +28,12 @@
 #define QMTDISC_STRING			"+QMTDISC:"
 #define QMTCLOSE_STRING			"+QMTCLOSE:"
 
+//Microelect commands
+#define AT_MEWIFI_STRING		"MEWIFI"
+#define AT_MEGSM_STRING			"MEGSM"
+#define AT_MEDISCWIFI_STRING	"MEDISCWIFI"
+#define AT_MEDISCGSM_STRING		"MEDISCGSM"
+
 // Buffer settings.
 #define BUFFERSIZE_RESPONSE 	1500UL
 #define BUFFERSIZE_CMD 			128UL

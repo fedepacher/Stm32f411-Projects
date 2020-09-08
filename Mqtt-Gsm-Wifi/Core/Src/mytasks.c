@@ -519,6 +519,7 @@ void controlTask(void *argument) {
 				}
 			}
 		}
+		HAL_UART_F_Send(&huart1, AT_OK_STRING, 4);
 		memset((char*)analizeBuffer, '\0', sizeof(analizeBuffer));
 
 		osDelay(1);
@@ -954,7 +955,7 @@ void connectGSMTask(void *argument) {
 						;
 				}
 			}
-			//block till button is pressed
+			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, 13);
 			xSemaphoreTake(xSemaphoreGSM, portMAX_DELAY);
 			//delete task
 			osStatus_t thread_status;
@@ -992,6 +993,8 @@ void connectGSMTask(void *argument) {
 			break;
 		case 13:
 			internalState = 0;
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
+			HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
 			xSemaphoreTake(xSemaphoreGSM, portMAX_DELAY);
 			printf("Conectando a red GSM, Espere por favor.. \r\n");
 //			if (connectWifiTaskcHandle == NULL) {
@@ -1134,7 +1137,7 @@ void connectWifiTask(void *argument) {
 						;
 				}
 			}
-			//block till button is pressed
+			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, 13);
 			xSemaphoreTake(xSemaphoreWIFI, portMAX_DELAY);
 			//delete task
 			osStatus_t thread_status_pub, thread_status_sub;
@@ -1151,6 +1154,8 @@ void connectWifiTask(void *argument) {
 			break;
 		case 7:
 			internalState = 0;
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
+			HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
 			xSemaphoreTake(xSemaphoreWIFI, portMAX_DELAY);
 			printf("Conectando a wifi, Espere por favor.. \r\n");
 			//DESCONECTAR Y UNSUBSCRIBE
@@ -1180,15 +1185,17 @@ void publishTask(void *argument) {
 	HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
 	for (;;) {
 		memset(pub_data, '\0', BUFFERSIZE_CMD);
-		sprintf((char*) pub_data, "Contador: %d%c%c%c", contador, CTRL(z), '\r',
-				'\n');
+
 
 		switch (connection_state) {
 		case GSM:
+			sprintf((char*) pub_data, "Contador: %d%c%c%c", contador, CTRL(z), '\r',
+							'\n');
 			Status = BG96_PublishTopic(tcpconnectID, msgID, qos, retain,
 					pub_topic, pub_data, strlen((char*) pub_data));
 			break;
 		case WIFI:
+			sprintf((char*) pub_data, "Contador: %d%c%c", contador, '\r', '\n');
 			xSemaphoreTake(xSemaphoreMutexUart, 20000);
 			mqtt_Publisher(pub_topic, pub_data, strlen((char*) pub_data));
 			xSemaphoreGive(xSemaphoreMutexUart);

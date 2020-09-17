@@ -272,7 +272,7 @@ BG96_StatusTypeDef BG96_PublishTopic(uint8_t tcpconnectID, uint32_t msgID, uint8
 		/* The QMTPUB command doesn't have a return command
 		 until the data is actually sent. Thus we check here whether
 		 we got the '>' prompt or not. */
-		Ret = BG96_atCommand(cmdBuffer, strlen((char *) cmdBuffer), (uint8_t*) AT_SEND_PROMPT_STRING, 5000U);
+		Ret = BG96_atCommand(cmdBuffer, strlen((char *) cmdBuffer), (uint8_t*) AT_SEND_PROMPT_STRING, 15000U);
 
 		/* Return Error */
 		if (Ret != BG96_OK) {

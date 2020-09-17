@@ -71,6 +71,18 @@ ESP8266_StatusTypeDef ESP_Reset(){
 	//result = runAtCmd((uint8_t*)"AT+RST\r\n", 8, (uint8_t*) AT_OK_STRING);
 	return result;
 }
+
+/*
+ * @brief Search Wifi access point.
+ * @return SUCCESS, BUSY or ERROR.
+ */
+ESP8266_StatusTypeDef ESP_SearchWifi() {
+	ESP8266_StatusTypeDef result;
+	result = ESP_atCommand((uint8_t*)"AT+CWLAP\r\n", 10, (uint8_t*) AT_OK_STRING);
+	return result;
+}
+
+
 /*
  * @brief Connect to AP.
  * @param resetToDefault If true, reset the module to default settings before connecting.

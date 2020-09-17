@@ -24,9 +24,12 @@ typedef struct{
 
 /*
  * @brief Send connect packet to the broker mqtt.
+ * @param clientId The client identifier string.
+ * @param userName 		User name of the client. It can be used for authentication.
+ * @param password 		Password corresponding to the user name of the client. It can be used for authentication.
  * @return ESP8266_OK if it is ok otherwise ESP8266_ERROR
  */
-ESP8266_StatusTypeDef mqtt_Connect(void);
+ESP8266_StatusTypeDef mqtt_Connect(uint8_t * clientId, uint8_t * userName, uint8_t * password);
 
 /*
  * @brief Send publish packet to the broker mqtt.

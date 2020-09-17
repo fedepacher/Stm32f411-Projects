@@ -18,9 +18,13 @@
 extern QueueHandle_t xQueuePrintConsole;
 extern QueueHandle_t xSemaphoreSub;
 extern QueueHandle_t xSemaphoreControl;
+extern QueueHandle_t xQeuePubData;
 
 data_print_console_t data;
 static uint8_t indice = 0;
+data_publish_t data_publish_rx;
+data_publish_t data_publish_tx;
+uint8_t start_store = 0;
 /* Private function prototypes -----------------------------------------------*/
 //static void WIFI_Handler(void);
 
@@ -50,18 +54,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			if(dato == '\n')
 				xSemaphoreGiveFromISR(xSemaphoreSub, &xHigherPriorityTaskWoken);
 		}
+
 #if DEBUG
 	#if WRITE_CHAR
 		xQueueSendFromISR(xQueuePrintConsole, &dato, &xHigherPriorityTaskWoken);
 	#else
-		if(indice < BUFFERSIZE_CMD)
+		if(indice < BUFFERSIZE_CMD){		//MENOS 1 PORQUE QUIERO ARGREGARLE AL FINAL EL \0
 			data.data_cmd[indice++] = dato;
-		else
+		}
+		else{
 			indice = 0;
-		if(dato == '\n'){
+		}
+		if(dato == '\n'){// || indice >= BUFFERSIZE_CMD - 1){
 			data.data_cmd[indice] = '\0';
 			xQueueSendFromISR(xQueuePrintConsole, &data, &xHigherPriorityTaskWoken);
-			memset((char*)data.data_cmd, '\0', indice);
+			memset((char*)data.data_cmd, '\0', sizeof(data.data_cmd));
 			indice = 0;
 		}
 
@@ -77,6 +84,29 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 				}
 				// Receive one byte in interrupt mode
 				HAL_UART_Receive_IT(huart, (uint8_t*) &ControlBuffer.data[ControlBuffer.tail], 1);
+				if(start_store == 1){
+					if(data_publish_rx.length < sizeof(data_publish_rx.data)){
+						data_publish_rx.data[data_publish_rx.length++] = data;
+					}
+				}
+				if(data == '{'){
+					start_store = 1;
+					data_publish_rx.length = 0;
+					if(data_publish_rx.length < sizeof(data_publish_rx.data)){
+							data_publish_rx.data[data_publish_rx.length++] = data;
+					}
+				}
+				if(data == '}'){	//receive the end of tx so load a buffer and transmit
+					start_store = 0;
+					data_publish_rx.data[data_publish_rx.length++] = data;
+					if(xQeuePubData != NULL && data_publish_rx.length < sizeof(data_publish_rx.data)){
+						strncpy((char*)data_publish_tx.data, (char*)data_publish_rx.data, data_publish_rx.length - 1);
+						data_publish_tx.length = data_publish_rx.length - 1;
+						xQueueSendFromISR(xQeuePubData, &data_publish_tx, &xHigherPriorityTaskWoken);
+						memset((char*)data_publish_rx.data, '\0', sizeof(data_publish_rx.data));
+						data_publish_rx.length = 0;
+					}
+				}
 				if(xSemaphoreControl != NULL){//WAKEUP SUBSCRIBE TASK
 					if(data == '\n')
 						xSemaphoreGiveFromISR(xSemaphoreControl, &xHigherPriorityTaskWoken);

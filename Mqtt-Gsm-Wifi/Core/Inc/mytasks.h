@@ -19,5 +19,6 @@ void buttonsTask(void *argument);
 void subscribeTask(void *argument);
 void publishTask(void *argument);
 void controlTask(void *argument);
+void searchWifiTask(void *argument);
 
 #endif /* INC_MYTASKS_H_ */

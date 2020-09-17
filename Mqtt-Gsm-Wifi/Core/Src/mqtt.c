@@ -17,7 +17,7 @@
 
 //int32_t transport_socket;
 
-ESP8266_StatusTypeDef mqtt_Connect(void) {
+ESP8266_StatusTypeDef mqtt_Connect( uint8_t * clientId,  uint8_t * userName,  uint8_t * password) {
 	int32_t length;
 	unsigned char buffer[BUFFERSIZE_CMD];
 	uint8_t sessionPresent, connack_rc;
@@ -29,8 +29,10 @@ ESP8266_StatusTypeDef mqtt_Connect(void) {
 	while (trial < TRIAL_CONNECTION_TIME) {
 		switch (internalState) {
 		case 0:
-			connectData.MQTTVersion = 3; //4
-			connectData.clientID.cstring = "fede";
+			connectData.MQTTVersion = 3;//4;
+			connectData.clientID.cstring = (char*)clientId;
+			connectData.username.cstring = (char*)userName;
+			connectData.password.cstring = (char*)password;
 			connectData.keepAliveInterval = CONNECTION_KEEPALIVE_S * 2;
 			//connectData.willFlag = 1;
 			//connectData.will.qos = 2;
@@ -83,6 +85,8 @@ ESP8266_StatusTypeDef mqtt_Connect(void) {
 		}
 
 	}
+
+
 	return Status;
 }
 
@@ -98,29 +102,35 @@ ESP8266_StatusTypeDef mqtt_Publisher(uint8_t *topic, uint8_t *data,
 	MQTTString topicString = MQTTString_initializer;
 	topicString.cstring = (char*) topic;
 	int qos = 0;
-	memset((char*) buffer, '\0', BUFFERSIZE_CMD);
-	//strcat((char*)data->data, "\r\n");// OJO QUE PUEDE QUE ALGUNOS ENVIOS NECESITEN ESTE \R\N
-	length = MQTTSerialize_publish(buffer, BUFFERSIZE_CMD, 0, qos, 0, 0,
-			topicString, data, dataLength);
 
-	// Send PUBLISH to the mqtt broker.
-	while (trial < TRIAL_CONNECTION_TIME) {
-		switch (internalState) {
-		case 0:
-			Status = ESP_SendData(buffer, length);
+	if(MQTTSerialize_pingreq(buffer, BUFFERSIZE_CMD) != 0){
+		memset((char*) buffer, '\0', BUFFERSIZE_CMD);
+		//strcat((char*)data->data, "\r\n");// OJO QUE PUEDE QUE ALGUNOS ENVIOS NECESITEN ESTE \R\N
+		length = MQTTSerialize_publish(buffer, BUFFERSIZE_CMD, 0, qos, 0, 0,
+				topicString, data, dataLength);
 
-			if (Status == ESP8266_OK) {	//(result = transport_sendPacketBuffer(transport_socket, buffer, length)) == length) {
-				internalState++;
-			} else {
-				internalState = 0;
-				trial++;
+		// Send PUBLISH to the mqtt broker.
+		while (trial < TRIAL_CONNECTION_TIME) {
+			switch (internalState) {
+			case 0:
+				Status = ESP_SendData(buffer, length);
+
+				if (Status == ESP8266_OK) {	//(result = transport_sendPacketBuffer(transport_socket, buffer, length)) == length) {
+					internalState++;
+				} else {
+					internalState = 0;
+					trial++;
+				}
+				break;
+			case 1:
+				Status = ESP8266_OK;
+				trial = TRIAL_CONNECTION_TIME;
+				break;
 			}
-			break;
-		case 1:
-			Status = ESP8266_OK;
-			trial = TRIAL_CONNECTION_TIME;
-			break;
 		}
+	}
+	else{
+		Status = ESP8266_ERROR;
 	}
 	return Status;
 }

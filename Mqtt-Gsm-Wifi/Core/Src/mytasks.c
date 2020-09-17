@@ -25,8 +25,7 @@
 #define CTRL(x) (#x[0]-'a'+1)
 
 #define STACK_SIZE				512UL
-#define CONSOLE_QUEUE_LENGTH	50
-#define CMD_LENGTH				128
+#define CONSOLE_QUEUE_LENGTH	2
 #define TRIAL					1
 
 //FSM maximun timeout
@@ -117,8 +116,8 @@
 //"AT+CGEQMIN"
 
 typedef struct {
-	uint8_t cmd[CMD_LENGTH];
-	uint8_t response[CMD_LENGTH];
+	uint8_t cmd[BUFFERSIZE_CMD];
+	uint8_t response[BUFFERSIZE_CMD];
 	uint32_t cmd_timeout;
 	uint32_t fsm_timeout;
 } cmd_type_t;
@@ -236,28 +235,14 @@ extern UART_HandleTypeDef huart1;	//connected to bg96
 extern UART_HandleTypeDef huart2;	//connected to bg96
 extern UART_HandleTypeDef huart6;	//connected to esp8266
 
-static uint8_t host[32] = "broker.hivemq.com"; ///< HostName i.e. "test.mosquitto.org"//"broker.mqttdashboard.com";//
+static uint8_t host[32] = "broker.hivemq.com";//"demo.thingsboard.io";//"broker.hivemq.com"; ///< HostName i.e. "test.mosquitto.org"//"broker.mqttdashboard.com";//
 static uint16_t port = 1883; ///< Remote port number.
-static uint8_t clientId[] = "fedeID";
-static uint8_t userName[] = "";
+static uint8_t clientId[] = "fedeID";//"7b6aa350-fe38-11e8-a60a-f35391479547";//"fedeID";
+static uint8_t userName[] = "";//"DHfFAKR4F8ora8RfQmGZ";//""
 static uint8_t password[] = "";
 static uint8_t tcpconnectID = 0;
 static uint8_t vsn = 3;
-static uint8_t cid = 1; //					//Atributes defined for connect wifi task
-//					osThreadAttr_t publishTask_attributes = { .name =
-//							"connectWifi", .stack_mem = &publishTaskBuffer[0],
-//							.stack_size = sizeof(publishTaskBuffer), .cb_mem =
-//									&publishTaskControlBlock, .cb_size =
-//									sizeof(publishTaskControlBlock), .priority =
-//									(osPriority_t) osPriorityAboveNormal, };
-//
-//					res = osThreadNew(publishTask, NULL,
-//							&publishTask_attributes);
-//					if (res == NULL) {
-//						printf("error creacion de tarea\r\n");
-//						while (1)
-//							;
-//					}
+static uint8_t cid = 1; //
 static uint8_t clean_session = 0;
 static uint16_t keepalive = 120; ///< Default keepalive time in seconds.
 static uint8_t sslenable = 0; ///< SSL is disabled by default.
@@ -265,11 +250,13 @@ static uint8_t sslenable = 0; ///< SSL is disabled by default.
 static const uint32_t msgID = 0;
 static const uint8_t qos = 0;
 static const uint8_t retain = 0;
-static uint8_t pub_topic[32] = "topic/pub";
+static uint8_t pub_topic[32] = "v1/devices/me/telemetry";//"topic/pub";
 static uint8_t sub_topic[32] = "topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
 static uint8_t sub_data[BUFFERSIZE_CMD];
 uint8_t analizeBuffer[BUFFERSIZE_RESPONSE];
+static uint8_t wifi_username[64];
+static uint8_t wifi_password[64];
 
 
 
@@ -283,6 +270,7 @@ uint8_t connection_state;		//=0 gsm,
 
 QueueHandle_t xSemaphoreSub;
 QueueHandle_t xQueuePrintConsole;
+QueueHandle_t xQeuePubData;
 SemaphoreHandle_t mutex;
 button_t button_down;
 SemaphoreHandle_t xSemaphoreButton;
@@ -291,6 +279,7 @@ SemaphoreHandle_t xSemaphorePublish;
 SemaphoreHandle_t xSemaphoreGSM;
 SemaphoreHandle_t xSemaphoreWIFI;
 SemaphoreHandle_t xSemaphoreControl;
+SemaphoreHandle_t xSemaphoreSearchWifi;
 
 
 osThreadId_t printTaskHandle;
@@ -314,7 +303,7 @@ uint32_t subscribeTaskBuffer[256];
 StaticTask_t subscribeTaskControlBlock;
 
 osThreadId_t publishTaskcHandle;
-uint32_t publishTaskBuffer[256];
+uint32_t publishTaskBuffer[512];
 StaticTask_t publishTaskControlBlock;
 
 osThreadId_t ledTaskcHandle;
@@ -324,6 +313,10 @@ StaticTask_t ledTaskControlBlock;
 osThreadId_t controlTaskcHandle;
 uint32_t controlTaskBuffer[128];
 StaticTask_t controlTaskControlBlock;
+
+osThreadId_t searchWifiTaskcHandle;
+uint32_t searchWifiTaskBuffer[128];
+StaticTask_t searchWifiTaskControlBlock;
 
 /**
  * @brief	Check flag and set error led, increment internal state if it is needed
@@ -356,9 +349,10 @@ void initTasks() {
 	xSemaphoreGSM = xSemaphoreCreateCounting(2, 0);				//semaphore counting to activate gsm connection
 	xSemaphoreWIFI = xSemaphoreCreateCounting(2, 0);			//semaphore counting to activate wifi connection
 	xSemaphoreControl = xSemaphoreCreateCounting(5, 0);			//semaphore counting to get ME1040 commands
+	xSemaphoreSearchWifi = xSemaphoreCreateBinary();			//semahore to search wifi access point
+	xQeuePubData = xQueueCreate(5, sizeof(data_publish_t));
 
-
-	if (xQueuePrintConsole == NULL) {
+	if (xQueuePrintConsole == NULL || xQeuePubData == NULL) {
 		printf("error queue creation\r\n");
 		while (1)
 			;
@@ -372,7 +366,7 @@ void initTasks() {
 
 	if (xSemaphoreButton == NULL || xSemaphorePublish == NULL
 				|| xSemaphoreGSM == NULL || xSemaphoreWIFI == NULL
-				|| xSemaphoreControl == NULL) {
+				|| xSemaphoreControl == NULL || xSemaphoreSearchWifi == NULL) {
 		printf("error buttons semaphore creation\r\n");
 		while (1)
 			;
@@ -413,8 +407,6 @@ void initTasks() {
 							&connectGSMTaskControlBlock, .cb_size =
 							sizeof(connectGSMTaskControlBlock), .priority =
 							(osPriority_t) osPriorityAboveNormal, };
-//	switch (connection_state) {
-//	case GSM:
 		connectGSMTaskcHandle = osThreadNew(connectGSMTask, NULL,
 				&connectBG96Task_attributes);
 		if (connectGSMTaskcHandle == NULL) {
@@ -422,8 +414,7 @@ void initTasks() {
 			while (1)
 				;
 		}
-//		break;
-//	case WIFI:
+
 		//Atributes defined for connect bg96 task
 		osThreadAttr_t connectWifiTask_attributes = { .name = "connectWifi",
 				.stack_mem = &connectWifiTaskBuffer[0], .stack_size =
@@ -439,8 +430,6 @@ void initTasks() {
 				;
 		}
 
-//		break;
-//	}
 
 	//Atributes defined for connect bg96 task
 	osThreadAttr_t ledTask_attributes = { .name = "led", .stack_mem =
@@ -468,6 +457,33 @@ void initTasks() {
 				;
 		}
 
+		//Atributes defined for search wifi task
+			osThreadAttr_t searchWifiTask_attributes = { .name = "searchWifi", .stack_mem =
+					&searchWifiTaskBuffer[0], .stack_size = sizeof(searchWifiTaskBuffer), .cb_mem =
+							&searchWifiTaskControlBlock, .cb_size = sizeof(searchWifiTaskControlBlock),
+						.priority = (osPriority_t) osPriorityAboveNormal1, };
+
+			searchWifiTaskcHandle = osThreadNew(searchWifiTask, NULL, &searchWifiTask_attributes);
+				if (searchWifiTaskcHandle == NULL) {
+					printf("error control task creation\r\n");
+					while (1)
+						;
+				}
+
+}
+
+/**
+ * @brief Send command to search Wifi Access point
+ * @param argument	task parameter, not used
+ * @return void
+ */
+void searchWifiTask(void *argument) {
+
+	for (;;) {
+		xSemaphoreTake(xSemaphoreSearchWifi, portMAX_DELAY);
+		ESP_SearchWifi();
+		osDelay(1);
+	}
 }
 
 /**
@@ -475,8 +491,6 @@ void initTasks() {
  * @param argument	task parameter, not used
  * @return void
  */
-
-
 void controlTask(void *argument) {
 	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
@@ -493,7 +507,35 @@ void controlTask(void *argument) {
 			}
 		}
 		ControlBuffer.head = ControlBuffer.tail;
-		if (states == 0 && strstr((char *)analizeBuffer, AT_MEWIFI_STRING) != NULL){
+		if(strstr((char *)analizeBuffer, AT_MECWLAP_STRING) != NULL){
+			xSemaphoreGive(xSemaphoreSearchWifi);
+		}
+		if(strstr((char *)analizeBuffer, AT_MECWJAP_STRING) != NULL){
+			int i;
+			uint8_t cont1 = 0;
+			uint8_t length_user = 0;
+			uint8_t length_pass = 0;
+			uint32_t length = strlen((char *)analizeBuffer);
+			for(i = 0; i < length; i++){
+				if(analizeBuffer[i] == '"'){
+					cont1++;
+				}
+				if(cont1 == 1){
+					length_user++;
+				}
+				if(cont1 == 2){
+					strncpy((char*)wifi_username,  (char *)&analizeBuffer[i - length_user + 1], (length_user - 1));
+					cont1++;
+				}
+				if(cont1 == 4){
+					length_pass++;
+				}
+				if(cont1 == 5){
+					strncpy((char*)wifi_password,  (char *)&analizeBuffer[i - length_pass + 1], (length_pass - 1));
+					break;
+				}
+
+			}
 			connection_state = WIFI;
 			states = 1;
 			xSemaphoreGive(xSemaphoreWIFI);
@@ -519,7 +561,9 @@ void controlTask(void *argument) {
 				}
 			}
 		}
+		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
 		HAL_UART_F_Send(&huart1, AT_OK_STRING, 4);
+		xSemaphoreGive(mutex);
 		memset((char*)analizeBuffer, '\0', sizeof(analizeBuffer));
 
 		osDelay(1);
@@ -567,7 +611,11 @@ void printConsoleTask(void *argument) {
 	for (;;) {
 		xQueueReceive(xQueuePrintConsole, &dataQueuePrint, portMAX_DELAY);
 		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS); //taskENTER_CRITICAL(); //
+#if ME_CONSOLE
+		HAL_UART_F_Send(&huart1, (char*)&dataQueuePrint.data_cmd[0], strlen((char*)dataQueuePrint.data_cmd));
+#else
 		printf("%s", dataQueuePrint.data_cmd);
+#endif
 		xSemaphoreGive(mutex); //taskEXIT_CRITICAL(); //
 		vTaskDelay(1 / portTICK_PERIOD_MS);
 	}
@@ -719,40 +767,7 @@ static int CheckFlag(ESP8266_StatusTypeDef status, int internalState) {
 //
 //}
 
-//void publishTask(void *argument) {
-//
-//	uint8_t contador = 0;
-//	for (;;) {
-//		//xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
-//
-//		memset(pub_data, '\0', BUFFERSIZE_CMD);
-//		sprintf((char*) pub_data, "Contador: %d%c%c", contador, '\r', '\n');
-//		xSemaphoreTake(xSemaphoreMutexUart, 20000);
-//		mqtt_Publisher(pub_topic, pub_data, strlen((char*) pub_data));
-//		xSemaphoreGive(xSemaphoreMutexUart);
-//		contador++;
-//		vTaskDelay(1000 / portTICK_PERIOD_MS);
-//	}
-//}
-//
-//void subscribeTask(void *argument) {
-//	ESP8266_StatusTypeDef Status;
-//	uint32_t RetLength = 0;
-//
-//	for (;;) {
-//		xSemaphoreTake(xSemaphoreSub, portMAX_DELAY);
-//		xSemaphoreTake(xSemaphoreMutexUart, 20000);
-//		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
-//		xSemaphoreGive(xSemaphoreMutexUart);
-//		if (Status == ESP8266_OK) {
-//			if (RetLength != 0) {
-//				sub_data[RetLength] = '\0';
-//				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
-//			}
-//		}
-//		vTaskDelay(500 / portTICK_PERIOD_MS);
-//	}
-//}
+
 
 void connectGSMTask(void *argument) {
 	//driver_uart_t * uart = (driver_uart_t *)argument;
@@ -955,7 +970,9 @@ void connectGSMTask(void *argument) {
 						;
 				}
 			}
+			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS); //taskENTER_CRITICAL(); //
 			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, 13);
+			xSemaphoreGive(mutex);
 			xSemaphoreTake(xSemaphoreGSM, portMAX_DELAY);
 			//delete task
 			osStatus_t thread_status;
@@ -1054,7 +1071,7 @@ void connectWifiTask(void *argument) {
 		switch (internalState) {
 		case 0:
 
-			Status = ESP_ConnectWifi(true, WIFI_AP_SSID, WIFI_AP_PASS);
+			Status = ESP_ConnectWifi(true, wifi_username, wifi_password);
 
 			internalState = CheckFlag(Status, internalState);
 
@@ -1084,7 +1101,7 @@ void connectWifiTask(void *argument) {
 		case 4:
 			// Send the mqtt data.
 
-			Status = mqtt_Connect();
+			Status = mqtt_Connect(clientId, userName, password);
 
 			internalState = CheckFlag(Status, internalState);
 			//osDelay(500 / portTICK_PERIOD_MS);
@@ -1137,7 +1154,10 @@ void connectWifiTask(void *argument) {
 						;
 				}
 			}
+			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
 			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, 13);
+			xSemaphoreGive(mutex);
+
 			xSemaphoreTake(xSemaphoreWIFI, portMAX_DELAY);
 			//delete task
 			osStatus_t thread_status_pub, thread_status_sub;
@@ -1181,28 +1201,37 @@ void connectWifiTask(void *argument) {
 
 void publishTask(void *argument) {
 	BG96_StatusTypeDef Status;
+	ESP8266_StatusTypeDef Status_Wifi;
+	data_publish_t dataPub;
 	uint8_t contador = 0;
+
 	HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
 	for (;;) {
-		memset(pub_data, '\0', BUFFERSIZE_CMD);
+		//memset(pub_data, '\0', BUFFERSIZE_CMD);
+
+		xQueueReceive(xQeuePubData, &dataPub, portMAX_DELAY);
 
 
 		switch (connection_state) {
 		case GSM:
-			sprintf((char*) pub_data, "Contador: %d%c%c%c", contador, CTRL(z), '\r',
-							'\n');
+
+
+			//AGREGAR EL CTRL(z) PASCUAL
+
+			dataPub.data[dataPub.length] = CTRL(z);
+			sprintf((char*) pub_data, "Contador: %d%c", contador, CTRL(z));
 			Status = BG96_PublishTopic(tcpconnectID, msgID, qos, retain,
-					pub_topic, pub_data, strlen((char*) pub_data));
+					pub_topic, dataPub.data, strlen((char*)dataPub.data));
 			break;
 		case WIFI:
-			sprintf((char*) pub_data, "Contador: %d%c%c", contador, '\r', '\n');
+			//sprintf((char*) pub_data, "Contador: %d%c%c", contador, '\r', '\n');
 			xSemaphoreTake(xSemaphoreMutexUart, 20000);
-			mqtt_Publisher(pub_topic, pub_data, strlen((char*) pub_data));
+			Status_Wifi = mqtt_Publisher(pub_topic, dataPub.data, dataPub.length);
 			xSemaphoreGive(xSemaphoreMutexUart);
 			break;
 		}
 		contador++;
-		osDelay(1000 / portTICK_PERIOD_MS);
+		osDelay(100 / portTICK_PERIOD_MS);
 
 	}
 }

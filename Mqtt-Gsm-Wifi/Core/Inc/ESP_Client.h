@@ -110,11 +110,18 @@ ESP8266_StatusTypeDef ESP_ReceiveData(uint8_t* Buffer, uint32_t Length,
  * @brief Reset Module ESP.
  * @return SUCCESS, BUSY or ERROR.
  */
-ESP8266_StatusTypeDef ESP_Reset();
+ESP8266_StatusTypeDef ESP_Reset(void);
 
 /*
  * @brief Close connection.
  */
 ESP8266_StatusTypeDef ESP8266_ConnectionClose(void);
+
+/*
+ * @brief Search Wifi access point.
+ * @return SUCCESS, BUSY or ERROR.
+ */
+ESP8266_StatusTypeDef ESP_SearchWifi(void);
+
 
 #endif /* INC_ESP_CLIENT_H_ */

@@ -37,6 +37,13 @@ typedef struct{
 typedef struct{
 	uint8_t data_cmd[BUFFERSIZE_CMD];
 }data_print_console_t;
+
+typedef struct{
+	uint8_t data[BUFFERSIZE_CMD];
+	uint32_t length;
+}data_publish_t;
+
+
  /**
   * @brief  Uart Initalization.
   *         This function inits the UART interface to deal with the esp8266,

@@ -11,6 +11,7 @@
 
 #define DEBUG					1
 #define WRITE_CHAR				0
+#define ME_CONSOLE				1
 
 #define END_OF_ARRAY			"EOA"
 
@@ -33,11 +34,13 @@
 #define AT_MEGSM_STRING			"MEGSM"
 #define AT_MEDISCWIFI_STRING	"MEDISCWIFI"
 #define AT_MEDISCGSM_STRING		"MEDISCGSM"
-#define AT_MECONNOK_STRING		"AT+MECONNOK\r\n"
+#define AT_MECONNOK_STRING		"MECONNOK"//"AT+MECONNOK\r\n"
+#define AT_MECWLAP_STRING		"MECWLAP"
+#define AT_MECWJAP_STRING		"MECWJAP"
 
 // Buffer settings.
 #define BUFFERSIZE_RESPONSE 	1500UL
-#define BUFFERSIZE_CMD 			128UL
+#define BUFFERSIZE_CMD 			256UL
 
 // Timing settings.
 //#define TIMEOUT_MS_RESTART       2000UL///< Module restart timeout.

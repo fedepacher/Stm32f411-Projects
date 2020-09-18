@@ -268,9 +268,11 @@ enum connection_t {
 
 uint8_t connection_state;		//=0 gsm,
 
-QueueHandle_t xSemaphoreSub;
+
 QueueHandle_t xQueuePrintConsole;
 QueueHandle_t xQeuePubData;
+QueueHandle_t xQeueSubData;
+
 SemaphoreHandle_t mutex;
 button_t button_down;
 SemaphoreHandle_t xSemaphoreButton;
@@ -350,9 +352,10 @@ void initTasks() {
 	xSemaphoreWIFI = xSemaphoreCreateCounting(2, 0);			//semaphore counting to activate wifi connection
 	xSemaphoreControl = xSemaphoreCreateCounting(5, 0);			//semaphore counting to get ME1040 commands
 	xSemaphoreSearchWifi = xSemaphoreCreateBinary();			//semahore to search wifi access point
-	xQeuePubData = xQueueCreate(100, sizeof(data_publish_t));
+	xQeuePubData = xQueueCreate(50, sizeof(data_publish_t));
+	xQeueSubData = xQueueCreate(50, sizeof(data_publish_t));
 
-	if (xQueuePrintConsole == NULL || xQeuePubData == NULL) {
+	if (xQueuePrintConsole == NULL || xQeuePubData == NULL|| xQeueSubData == NULL) {
 		printf("error queue creation\r\n");
 		while (1)
 			;
@@ -1135,8 +1138,8 @@ void connectWifiTask(void *argument) {
 						;
 				}
 			}
-			xSemaphoreSub = xSemaphoreCreateBinary();
-			if (xSemaphoreSub != NULL) {
+			//xSemaphoreSub = xSemaphoreCreateBinary();
+			if (xQeueSubData != NULL) {
 				//Atributes defined for connect wifi task
 				osThreadAttr_t subscribeTask_attributes = { .name =
 						"subscribe", .stack_mem = &subscribeTaskBuffer[0],
@@ -1238,20 +1241,26 @@ void publishTask(void *argument) {
 }
 
 void subscribeTask(void *argument) {
-	ESP8266_StatusTypeDef Status;
-	uint32_t RetLength = 0;
-
+	//ESP8266_StatusTypeDef Status;
+	//uint32_t RetLength = 0;
+	data_publish_t dataSub;
 	for (;;) {
-		xSemaphoreTake(xSemaphoreSub, portMAX_DELAY);
-		xSemaphoreTake(xSemaphoreMutexUart, 20000);
-		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
-		xSemaphoreGive(xSemaphoreMutexUart);
-		if (Status == ESP8266_OK) {
-			if (RetLength != 0) {
-				sub_data[RetLength] = '\0';
-				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
-			}
-		}
+		xQueueReceive(xQeueSubData, &dataSub, portMAX_DELAY);
+
+		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
+		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
+		xSemaphoreGive(mutex);
+
+
+//		xSemaphoreTake(xSemaphoreMutexUart, 20000);
+//		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
+//		xSemaphoreGive(xSemaphoreMutexUart);
+//		if (Status == ESP8266_OK) {
+//			if (RetLength != 0) {
+//				sub_data[RetLength] = '\0';
+//				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
+//			}
+//		}
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }

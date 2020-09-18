@@ -12,21 +12,27 @@
 
 
 /* Private valirable ---------------------------------------------------------*/
-//extern UART_HandleTypeDef huart1;	//--
-//extern UART_HandleTypeDef huart2;	//connected to bg96
-//extern UART_HandleTypeDef huart6;	//connected to esp8266
 extern QueueHandle_t xQueuePrintConsole;
-extern QueueHandle_t xSemaphoreSub;
 extern QueueHandle_t xSemaphoreControl;
 extern QueueHandle_t xQeuePubData;
+extern QueueHandle_t xQeueSubData;
+
 
 data_print_console_t data;
 static uint8_t indice = 0;
 data_publish_t data_publish_rx;
 data_publish_t data_publish_tx;
-uint8_t start_store = 0;
-uint8_t recep_ast = 0;			//get asterisk
-uint8_t count_crc = 0;			//get crc
+
+data_publish_t data_subscribe_rx;
+data_publish_t data_subscribe_tx;
+
+uint8_t start_store_pub = 0;
+uint8_t recep_ast_pub = 0;			//get asterisk
+uint8_t count_crc_pub = 0;			//get crc
+
+uint8_t start_store_sub = 0;
+uint8_t recep_ast_sub = 0;			//get asterisk
+uint8_t count_crc_sub = 0;			//get crc
 /* Private function prototypes -----------------------------------------------*/
 //static void WIFI_Handler(void);
 
@@ -52,9 +58,38 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		HAL_UART_Receive_IT(huart, (uint8_t*) &WiFiRxBuffer.data[WiFiRxBuffer.tail], 1);
 
 
-		if(xSemaphoreSub != NULL){//WAKEUP SUBSCRIBE TASK
-			if(dato == '\n')
-				xSemaphoreGiveFromISR(xSemaphoreSub, &xHigherPriorityTaskWoken);
+		if(start_store_sub == 1){
+			if(data_subscribe_rx.length < sizeof(data_subscribe_rx.data)){
+				data_subscribe_rx.data[data_subscribe_rx.length++] = dato;
+			}
+		}
+		//the { char is because thingsboard accept json format
+		if(dato == '{' || dato == '$'){
+			start_store_sub = 1;
+			data_subscribe_rx.length = 0;
+			if(data_subscribe_rx.length < sizeof(data_subscribe_rx.data)){
+				data_subscribe_rx.data[data_subscribe_rx.length++] = dato;
+			}
+		}
+		if(dato == '*'){
+			recep_ast_sub = 1;
+		}
+		if(recep_ast_sub == 1){
+			count_crc_sub++;
+		}
+		//the { char is because thingsboard accept json format
+		if(dato == '}' || count_crc_sub == 3){	//receive the end of tx so load a buffer and transmit
+			start_store_sub = 0;
+			recep_ast_sub = 0;
+			count_crc_sub = 0;
+			data_subscribe_rx.data[data_subscribe_rx.length++] = dato;
+			if(xQeueSubData != NULL && data_subscribe_rx.length < sizeof(data_subscribe_rx.data)){
+				strncpy((char*)data_subscribe_tx.data, (char*)data_subscribe_rx.data, data_subscribe_rx.length - 1);
+				data_subscribe_tx.length = data_subscribe_rx.length - 1;
+				xQueueSendFromISR(xQeueSubData, &data_subscribe_tx, &xHigherPriorityTaskWoken);
+				memset((char*)data_subscribe_rx.data, '\0', sizeof(data_subscribe_rx.data));
+				data_subscribe_rx.length = 0;
+			}
 		}
 
 #if DEBUG
@@ -79,38 +114,38 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	}
 	else{
 			if(huart->Instance == USART1){
-				uint8_t data = ControlBuffer.data[ControlBuffer.tail];
+				uint8_t dato = ControlBuffer.data[ControlBuffer.tail];
 
 				if (++ControlBuffer.tail >= BUFFERSIZE_CIRCULAR) {
 					ControlBuffer.tail = 0;
 				}
 				// Receive one byte in interrupt mode
 				HAL_UART_Receive_IT(huart, (uint8_t*) &ControlBuffer.data[ControlBuffer.tail], 1);
-				if(start_store == 1){
+				if(start_store_pub == 1){
 					if(data_publish_rx.length < sizeof(data_publish_rx.data)){
-						data_publish_rx.data[data_publish_rx.length++] = data;
+						data_publish_rx.data[data_publish_rx.length++] = dato;
 					}
 				}
 				//the { char is because thingsboard accept json format
-				if(data == '{' || data == '$'){
-					start_store = 1;
+				if(dato == '{' || dato == '$'){
+					start_store_pub = 1;
 					data_publish_rx.length = 0;
 					if(data_publish_rx.length < sizeof(data_publish_rx.data)){
-							data_publish_rx.data[data_publish_rx.length++] = data;
+							data_publish_rx.data[data_publish_rx.length++] = dato;
 					}
 				}
-				if(data == '*'){
-					recep_ast = 1;
+				if(dato == '*'){
+					recep_ast_pub = 1;
 				}
-				if(recep_ast == 1){
-					count_crc++;
+				if(recep_ast_pub == 1){
+					count_crc_pub++;
 				}
 				//the { char is because thingsboard accept json format
-				if(data == '}' || count_crc == 3){	//receive the end of tx so load a buffer and transmit
-					start_store = 0;
-					recep_ast = 0;
-					count_crc = 0;
-					data_publish_rx.data[data_publish_rx.length++] = data;
+				if(dato == '}' || count_crc_pub == 3){	//receive the end of tx so load a buffer and transmit
+					start_store_pub = 0;
+					recep_ast_pub = 0;
+					count_crc_pub = 0;
+					data_publish_rx.data[data_publish_rx.length++] = dato;
 					if(xQeuePubData != NULL && data_publish_rx.length < sizeof(data_publish_rx.data)){
 						strncpy((char*)data_publish_tx.data, (char*)data_publish_rx.data, data_publish_rx.length - 1);
 						data_publish_tx.length = data_publish_rx.length - 1;
@@ -120,7 +155,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					}
 				}
 				if(xSemaphoreControl != NULL){//WAKEUP SUBSCRIBE TASK
-					if(data == '\n' && start_store == 0)
+					if(dato == '\n' && start_store_pub == 0)
 						xSemaphoreGiveFromISR(xSemaphoreControl, &xHigherPriorityTaskWoken);
 				}
 			}
@@ -146,9 +181,12 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 
 void HAL_UART_F_Init(UART_HandleTypeDef *huart) {
 
-		start_store = 0;
-		recep_ast = 0;
-		count_crc = 0;
+		start_store_pub = 0;
+		recep_ast_pub = 0;
+		count_crc_pub = 0;
+		start_store_sub = 0;
+		recep_ast_sub = 0;
+		count_crc_sub = 0;
 
 		WiFiRxBuffer.head = 0;
 		WiFiRxBuffer.tail = 0;

@@ -250,8 +250,8 @@ static uint8_t sslenable = 0; ///< SSL is disabled by default.
 static const uint32_t msgID = 0;
 static const uint8_t qos = 0;
 static const uint8_t retain = 0;
-static uint8_t pub_topic[32] = "v1/devices/me/telemetry";//"topic/pub";
-static uint8_t sub_topic[32] = "topic/sub";
+static uint8_t pub_topic[32] = "ME/ID0001RX/PC";//"v1/devices/me/telemetry";//"topic/pub";
+static uint8_t sub_topic[32] = "ME/ID0001TX/PC";//"topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
 static uint8_t sub_data[BUFFERSIZE_CMD];
 uint8_t analizeBuffer[BUFFERSIZE_RESPONSE];
@@ -350,7 +350,7 @@ void initTasks() {
 	xSemaphoreWIFI = xSemaphoreCreateCounting(2, 0);			//semaphore counting to activate wifi connection
 	xSemaphoreControl = xSemaphoreCreateCounting(5, 0);			//semaphore counting to get ME1040 commands
 	xSemaphoreSearchWifi = xSemaphoreCreateBinary();			//semahore to search wifi access point
-	xQeuePubData = xQueueCreate(5, sizeof(data_publish_t));
+	xQeuePubData = xQueueCreate(100, sizeof(data_publish_t));
 
 	if (xQueuePrintConsole == NULL || xQeuePubData == NULL) {
 		printf("error queue creation\r\n");
@@ -534,7 +534,6 @@ void controlTask(void *argument) {
 					strncpy((char*)wifi_password,  (char *)&analizeBuffer[i - length_pass + 1], (length_pass - 1));
 					break;
 				}
-
 			}
 			connection_state = WIFI;
 			states = 1;
@@ -562,7 +561,7 @@ void controlTask(void *argument) {
 			}
 		}
 		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
-		HAL_UART_F_Send(&huart1, AT_OK_STRING, 4);
+		HAL_UART_F_Send(&huart1, AT_OK_STRING, strlen((char*)AT_OK_STRING));
 		xSemaphoreGive(mutex);
 		memset((char*)analizeBuffer, '\0', sizeof(analizeBuffer));
 
@@ -971,7 +970,7 @@ void connectGSMTask(void *argument) {
 				}
 			}
 			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS); //taskENTER_CRITICAL(); //
-			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, 13);
+			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, strlen((char*)AT_MECONNOK_STRING));
 			xSemaphoreGive(mutex);
 			xSemaphoreTake(xSemaphoreGSM, portMAX_DELAY);
 			//delete task
@@ -1071,7 +1070,7 @@ void connectWifiTask(void *argument) {
 		switch (internalState) {
 		case 0:
 
-			Status = ESP_ConnectWifi(true, wifi_username, wifi_password);
+			Status = ESP_ConnectWifi(true, (char*)wifi_username, (char*)wifi_password);
 
 			internalState = CheckFlag(Status, internalState);
 
@@ -1155,7 +1154,7 @@ void connectWifiTask(void *argument) {
 				}
 			}
 			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
-			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, 13);
+			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, strlen((char*)AT_MECONNOK_STRING));
 			xSemaphoreGive(mutex);
 
 			xSemaphoreTake(xSemaphoreWIFI, portMAX_DELAY);
@@ -1211,7 +1210,6 @@ void publishTask(void *argument) {
 
 		xQueueReceive(xQeuePubData, &dataPub, portMAX_DELAY);
 
-
 		switch (connection_state) {
 		case GSM:
 
@@ -1231,7 +1229,10 @@ void publishTask(void *argument) {
 			break;
 		}
 		contador++;
-		osDelay(100 / portTICK_PERIOD_MS);
+//		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
+//		HAL_UART_F_Send(&huart1, AT_OK_STRING, strlen((char*)AT_OK_STRING));
+//		xSemaphoreGive(mutex);
+		osDelay(10 / portTICK_PERIOD_MS);
 
 	}
 }
@@ -1251,7 +1252,7 @@ void subscribeTask(void *argument) {
 				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
 			}
 		}
-		vTaskDelay(500 / portTICK_PERIOD_MS);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 

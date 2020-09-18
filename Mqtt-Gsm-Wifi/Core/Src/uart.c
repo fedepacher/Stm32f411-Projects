@@ -25,6 +25,8 @@ static uint8_t indice = 0;
 data_publish_t data_publish_rx;
 data_publish_t data_publish_tx;
 uint8_t start_store = 0;
+uint8_t recep_ast = 0;			//get asterisk
+uint8_t count_crc = 0;			//get crc
 /* Private function prototypes -----------------------------------------------*/
 //static void WIFI_Handler(void);
 
@@ -89,15 +91,25 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						data_publish_rx.data[data_publish_rx.length++] = data;
 					}
 				}
-				if(data == '{'){
+				//the { char is because thingsboard accept json format
+				if(data == '{' || data == '$'){
 					start_store = 1;
 					data_publish_rx.length = 0;
 					if(data_publish_rx.length < sizeof(data_publish_rx.data)){
 							data_publish_rx.data[data_publish_rx.length++] = data;
 					}
 				}
-				if(data == '}'){	//receive the end of tx so load a buffer and transmit
+				if(data == '*'){
+					recep_ast = 1;
+				}
+				if(recep_ast == 1){
+					count_crc++;
+				}
+				//the { char is because thingsboard accept json format
+				if(data == '}' || count_crc == 3){	//receive the end of tx so load a buffer and transmit
 					start_store = 0;
+					recep_ast = 0;
+					count_crc = 0;
 					data_publish_rx.data[data_publish_rx.length++] = data;
 					if(xQeuePubData != NULL && data_publish_rx.length < sizeof(data_publish_rx.data)){
 						strncpy((char*)data_publish_tx.data, (char*)data_publish_rx.data, data_publish_rx.length - 1);
@@ -108,7 +120,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					}
 				}
 				if(xSemaphoreControl != NULL){//WAKEUP SUBSCRIBE TASK
-					if(data == '\n')
+					if(data == '\n' && start_store == 0)
 						xSemaphoreGiveFromISR(xSemaphoreControl, &xHigherPriorityTaskWoken);
 				}
 			}
@@ -133,6 +145,10 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_UART_F_Init(UART_HandleTypeDef *huart) {
+
+		start_store = 0;
+		recep_ast = 0;
+		count_crc = 0;
 
 		WiFiRxBuffer.head = 0;
 		WiFiRxBuffer.tail = 0;

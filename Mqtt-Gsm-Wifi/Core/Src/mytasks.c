@@ -1094,7 +1094,6 @@ void connectWifiTask(void *argument) {
 			break;
 		case 3:
 			// Start TCP connection.
-
 			Status = ESP_StartTCP((char*) host, port, keepalive, sslenable);
 
 			//osDelay(500 / portTICK_PERIOD_MS);
@@ -1102,17 +1101,12 @@ void connectWifiTask(void *argument) {
 			break;
 		case 4:
 			// Send the mqtt data.
-
 			Status = mqtt_Connect(clientId, userName, password);
 
 			internalState = CheckFlag(Status, internalState);
-			//osDelay(500 / portTICK_PERIOD_MS);
 
 			break;
 		case 5:
-
-			//ALGO NO LE GUSTA DEL SUBSCRIBE
-
 			Status = mqtt_SubscriberPacket(sub_topic,
 					strlen((char*) sub_topic));
 
@@ -1138,7 +1132,6 @@ void connectWifiTask(void *argument) {
 						;
 				}
 			}
-			//xSemaphoreSub = xSemaphoreCreateBinary();
 			if (xQeueSubData != NULL) {
 				//Atributes defined for connect wifi task
 				osThreadAttr_t subscribeTask_attributes = { .name =
@@ -1156,6 +1149,10 @@ void connectWifiTask(void *argument) {
 						;
 				}
 			}
+			osDelay(3000 / portTICK_PERIOD_MS);
+			internalState++;
+			break;
+		case 8:
 			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
 			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, strlen((char*)AT_MECONNOK_STRING));
 			xSemaphoreGive(mutex);
@@ -1174,12 +1171,14 @@ void connectWifiTask(void *argument) {
 				// Failed to terminate a thread
 			}
 			break;
-		case 7:
+
+		case 9:
 			internalState = 0;
 			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
 			HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
 			xSemaphoreTake(xSemaphoreWIFI, portMAX_DELAY);
 			printf("Conectando a wifi, Espere por favor.. \r\n");
+
 			//DESCONECTAR Y UNSUBSCRIBE
 
 			break;

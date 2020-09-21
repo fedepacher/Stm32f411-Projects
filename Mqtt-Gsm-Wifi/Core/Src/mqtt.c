@@ -34,6 +34,7 @@ ESP8266_StatusTypeDef mqtt_Connect( uint8_t * clientId,  uint8_t * userName,  ui
 			connectData.username.cstring = (char*)userName;
 			connectData.password.cstring = (char*)password;
 			connectData.keepAliveInterval = CONNECTION_KEEPALIVE_S * 2;
+			//connectData.cleansession = 1;
 			//connectData.willFlag = 1;
 			//connectData.will.qos = 2;
 			memset((char*) buffer, '\0', BUFFERSIZE_CMD);

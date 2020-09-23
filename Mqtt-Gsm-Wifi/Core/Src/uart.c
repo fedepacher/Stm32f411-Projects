@@ -88,6 +88,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 				data_subscribe_tx.length = data_subscribe_rx.length - 1;
 				xQueueSendFromISR(xQeueSubData, &data_subscribe_tx, &xHigherPriorityTaskWoken);
 				memset((char*)data_subscribe_rx.data, '\0', sizeof(data_subscribe_rx.data));
+				memset((char*)data_subscribe_tx.data, '\0', sizeof(data_subscribe_tx.data));
 				data_subscribe_rx.length = 0;
 			}
 		}
@@ -151,6 +152,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						data_publish_tx.length = data_publish_rx.length - 1;
 						xQueueSendFromISR(xQeuePubData, &data_publish_tx, &xHigherPriorityTaskWoken);
 						memset((char*)data_publish_rx.data, '\0', sizeof(data_publish_rx.data));
+						memset((char*)data_publish_tx.data, '\0', sizeof(data_publish_tx.data));
 						data_publish_rx.length = 0;
 					}
 				}

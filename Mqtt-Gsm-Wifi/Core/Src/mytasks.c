@@ -250,8 +250,8 @@ static uint8_t sslenable = 0; ///< SSL is disabled by default.
 static const uint32_t msgID = 0;
 static const uint8_t qos = 0;
 static const uint8_t retain = 0;
-static uint8_t pub_topic[32] = "ME/ID0001RX/PC";//"v1/devices/me/telemetry";//"topic/pub";
-static uint8_t sub_topic[32] = "ME/ID0001TX/PC";//"topic/sub";
+static uint8_t pub_topic[32];// = "ME/ID0001RX/PC";//"v1/devices/me/telemetry";//"topic/pub";
+static uint8_t sub_topic[32];// = "ME/ID0001TX/PC";//"topic/sub";
 static uint8_t pub_data[BUFFERSIZE_CMD];
 static uint8_t sub_data[BUFFERSIZE_CMD];
 uint8_t analizeBuffer[BUFFERSIZE_RESPONSE];
@@ -516,25 +516,44 @@ void controlTask(void *argument) {
 		if(strstr((char *)analizeBuffer, AT_MECWJAP_STRING) != NULL){
 			int i;
 			uint8_t cont1 = 0;
-			uint8_t length_user = 0;
-			uint8_t length_pass = 0;
+			uint8_t length_aux = 0;
+			//uint8_t length_pass = 0;
 			uint32_t length = strlen((char *)analizeBuffer);
 			for(i = 0; i < length; i++){
 				if(analizeBuffer[i] == '"'){
 					cont1++;
 				}
 				if(cont1 == 1){
-					length_user++;
+					length_aux++;
 				}
-				if(cont1 == 2){
-					strncpy((char*)wifi_username,  (char *)&analizeBuffer[i - length_user + 1], (length_user - 1));
+				if(cont1 == 2){//get wifi username
+					strncpy((char*)wifi_username,  (char *)&analizeBuffer[i - length_aux + 1], (length_aux - 1));
+					length_aux = 0;
 					cont1++;
 				}
 				if(cont1 == 4){
-					length_pass++;
+					length_aux++;
 				}
-				if(cont1 == 5){
-					strncpy((char*)wifi_password,  (char *)&analizeBuffer[i - length_pass + 1], (length_pass - 1));
+				if(cont1 == 5){//get wifi password
+					strncpy((char*)wifi_password,  (char *)&analizeBuffer[i - length_aux + 1], (length_aux - 1));
+					length_aux = 0;
+					cont1++;
+				}
+				if(cont1 == 7){
+					length_aux++;
+				}
+				if(cont1 == 8){//get publish topic
+					strncpy((char*)pub_topic,  (char *)&analizeBuffer[i - length_aux + 1], (length_aux - 1));
+					length_aux = 0;
+					cont1++;
+				}
+				if(cont1 == 10){
+					length_aux++;
+				}
+				if(cont1 == 11){//get subscribe topic
+					strncpy((char*)sub_topic,  (char *)&analizeBuffer[i - length_aux + 1], (length_aux - 1));
+					length_aux = 0;
+					cont1++;
 					break;
 				}
 			}
@@ -1152,7 +1171,7 @@ void connectWifiTask(void *argument) {
 			osDelay(3000 / portTICK_PERIOD_MS);
 			internalState++;
 			break;
-		case 8:
+		case 7:
 			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
 			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, strlen((char*)AT_MECONNOK_STRING));
 			xSemaphoreGive(mutex);
@@ -1172,7 +1191,7 @@ void connectWifiTask(void *argument) {
 			}
 			break;
 
-		case 9:
+		case 8:
 			internalState = 0;
 			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
 			HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
@@ -1243,12 +1262,20 @@ void subscribeTask(void *argument) {
 	//ESP8266_StatusTypeDef Status;
 	//uint32_t RetLength = 0;
 	data_publish_t dataSub;
+	uint8_t contador = 0;
 	for (;;) {
+		memset((char*)dataSub.data, '\0', sizeof(dataSub.data));
 		xQueueReceive(xQeueSubData, &dataSub, portMAX_DELAY);
 
 		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
+		//HAL_UART_Transmit(&huart1, (uint8_t*)&dataSub.data[0], dataSub.length, 1000);
+		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
+		osDelay(100 / portTICK_PERIOD_MS);
+		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
+		osDelay(100 / portTICK_PERIOD_MS);
 		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
 		xSemaphoreGive(mutex);
+		contador++;
 
 
 //		xSemaphoreTake(xSemaphoreMutexUart, 20000);
@@ -1260,7 +1287,7 @@ void subscribeTask(void *argument) {
 //				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
 //			}
 //		}
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(250 / portTICK_PERIOD_MS);
 	}
 }
 

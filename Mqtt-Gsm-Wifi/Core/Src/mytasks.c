@@ -14,7 +14,6 @@
 #include <string.h>
 #include "cmsis_os.h"
 #include "semphr.h"
-#include "credentials.h"
 #include "sysctrl_specific_f.h"
 #include "debounce.h"
 #include "timer_freertos.h"
@@ -235,10 +234,10 @@ extern UART_HandleTypeDef huart1;	//connected to bg96
 extern UART_HandleTypeDef huart2;	//connected to bg96
 extern UART_HandleTypeDef huart6;	//connected to esp8266
 
-static uint8_t host[32] = "broker.hivemq.com";//"demo.thingsboard.io";//"broker.hivemq.com"; ///< HostName i.e. "test.mosquitto.org"//"broker.mqttdashboard.com";//
+static uint8_t host[32] = "broker.hivemq.com";
 static uint16_t port = 1883; ///< Remote port number.
-static uint8_t clientId[] = "fedeID";//"7b6aa350-fe38-11e8-a60a-f35391479547";//"fedeID";
-static uint8_t userName[] = "";//"DHfFAKR4F8ora8RfQmGZ";//""
+static uint8_t clientId[] = "fedeID";
+static uint8_t userName[] = "";
 static uint8_t password[] = "";
 static uint8_t tcpconnectID = 0;
 static uint8_t vsn = 3;
@@ -250,8 +249,8 @@ static uint8_t sslenable = 0; ///< SSL is disabled by default.
 static const uint32_t msgID = 0;
 static const uint8_t qos = 0;
 static const uint8_t retain = 0;
-static uint8_t pub_topic[32];// = "ME/ID0001RX/PC";//"v1/devices/me/telemetry";//"topic/pub";
-static uint8_t sub_topic[32];// = "ME/ID0001TX/PC";//"topic/sub";
+static uint8_t pub_topic[32];// = "ME/ID0001RX/PC";//
+static uint8_t sub_topic[32];// = "ME/ID0001TX/PC";//
 static uint8_t pub_data[BUFFERSIZE_CMD];
 static uint8_t sub_data[BUFFERSIZE_CMD];
 uint8_t analizeBuffer[BUFFERSIZE_RESPONSE];
@@ -275,7 +274,7 @@ QueueHandle_t xQeueSubData;
 
 SemaphoreHandle_t mutex;
 button_t button_down;
-SemaphoreHandle_t xSemaphoreButton;
+//SemaphoreHandle_t xSemaphoreButton;
 SemaphoreHandle_t xSemaphoreMutexUart;
 SemaphoreHandle_t xSemaphorePublish;
 SemaphoreHandle_t xSemaphoreGSM;
@@ -288,9 +287,9 @@ osThreadId_t printTaskHandle;
 uint32_t printTaskBuffer[256];
 StaticTask_t printTaskControlBlock;
 
-osThreadId_t buttonsTaskHandle;
-uint32_t buttonsTaskBuffer[128];
-StaticTask_t buttonsTaskControlBlock;
+//osThreadId_t buttonsTaskHandle;
+//uint32_t buttonsTaskBuffer[128];
+//StaticTask_t buttonsTaskControlBlock;
 
 osThreadId_t connectGSMTaskcHandle;
 uint32_t connectGSMTaskBuffer[512];
@@ -320,14 +319,30 @@ osThreadId_t searchWifiTaskcHandle;
 uint32_t searchWifiTaskBuffer[128];
 StaticTask_t searchWifiTaskControlBlock;
 
+osThreadId_t keepAliveTaskcHandle;
+uint32_t keepAliveTaskBuffer[256];
+StaticTask_t keepAliveTaskControlBlock;
+
 /**
  * @brief	Check flag and set error led, increment internal state if it is needed
  * @param	status			flag that indicate if led should be on or off
  * @param	internalstate	state on FSM
+ * @return next state in FSM
  */
-//static int CheckFlag(ESP8266_StatusTypeDef status, int internalState);
+static int CheckFlag(ESP8266_StatusTypeDef status, int internalState);
+
+/**
+ * @brief	Clean timeout timer
+ * @param	timerT	timer to be cleaned
+ * @return void
+ */
 static void clean_Timer(TimerHandle_t *timerT);
 
+/*
+ * @brief Initialization tasks, semaphores and queues.
+ * @param argument	task argument
+ * @return void
+ */
 void initTasks() {
 
 	connection_state = NONE;
@@ -346,7 +361,6 @@ void initTasks() {
 
 	mutex = xSemaphoreCreateMutex();							//mutex to handle print console
 	xSemaphoreMutexUart = xSemaphoreCreateMutex();				//utex to handle uart
-	xSemaphoreButton = xSemaphoreCreateCounting(10, 0);			//semaphore ccounting to catch button
 	xSemaphorePublish = xSemaphoreCreateBinary();
 	xSemaphoreGSM = xSemaphoreCreateCounting(2, 0);				//semaphore counting to activate gsm connection
 	xSemaphoreWIFI = xSemaphoreCreateCounting(2, 0);			//semaphore counting to activate wifi connection
@@ -367,7 +381,7 @@ void initTasks() {
 			;
 	}
 
-	if (xSemaphoreButton == NULL || xSemaphorePublish == NULL
+	if (xSemaphorePublish == NULL	// || xSemaphoreButton == NULL
 				|| xSemaphoreGSM == NULL || xSemaphoreWIFI == NULL
 				|| xSemaphoreControl == NULL || xSemaphoreSearchWifi == NULL) {
 		printf("error buttons semaphore creation\r\n");
@@ -391,17 +405,6 @@ void initTasks() {
 			;
 	}
 
-	//Atributes defined for buttons task
-	osThreadAttr_t buttonsTask_attributes = { .name = "buttons", .stack_mem =
-			&buttonsTaskBuffer[0], .stack_size = sizeof(buttonsTaskBuffer),
-			.cb_mem = &buttonsTaskControlBlock, .cb_size =
-					sizeof(buttonsTaskControlBlock), .priority =
-					(osPriority_t) osPriorityAboveNormal, };
-
-	buttonsTaskHandle = osThreadNew(buttonsTask, NULL, &buttonsTask_attributes);
-	if (buttonsTaskHandle == NULL) {
-		printf("error buttons task creation\r\n");
-	}
 
 	//Atributes defined for connect bg96 task
 	osThreadAttr_t connectBG96Task_attributes = { .name = "connectBG96",
@@ -472,12 +475,11 @@ void initTasks() {
 					while (1)
 						;
 				}
-
 }
 
-/**
- * @brief Send command to search Wifi Access point
- * @param argument	task parameter, not used
+/*
+ * @brief Search wifi available network.
+ * @param argument	task argument
  * @return void
  */
 void searchWifiTask(void *argument) {
@@ -489,14 +491,12 @@ void searchWifiTask(void *argument) {
 	}
 }
 
-/**
- * @brief Receive data from uart1 and decide is it should connect over WiFi or GSM, disconnect and
- * @param argument	task parameter, not used
+/*
+ * @brief Receive command from UART from Microelect device and excecute desire task.
+ * @param argument	task argument
  * @return void
  */
 void controlTask(void *argument) {
-	/* USER CODE BEGIN 5 */
-	/* Infinite loop */
 	HAL_UART_F_Init(&huart1);
 	memset((char*)analizeBuffer, '\0', sizeof(analizeBuffer));
 	uint8_t states = 0;	//indicate that it should connect so ignore any if disconnect instruction ( need disconnect befor connecting another net)
@@ -591,7 +591,11 @@ void controlTask(void *argument) {
 	}
 }
 
-
+/*
+ * @brief Led status.
+ * @param argument	task argument
+ * @return void
+ */
 void ledTask(void *argument) {
 	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
@@ -613,6 +617,11 @@ void ledTask(void *argument) {
 	/* USER CODE END 5 */
 }
 
+/*
+ * @brief Print message to the console
+ * @param argument	task argument
+ * @return void
+ */
 #if DEBUG
 #if WRITE_CHAR
 	void printConsoleTask(void *argument){
@@ -644,6 +653,11 @@ void printConsoleTask(void *argument) {
 #endif
 #endif
 
+/**
+ * @brief	Check flag and set error led, increment internal state if it is needed
+ * @param	status			flag that indicate if led should be on or off
+ * @param	internalstate	state on FSM
+ */
 static int CheckFlag(ESP8266_StatusTypeDef status, int internalState) {
 	if (status == ESP8266_OK) {
 		// To the next state.
@@ -656,11 +670,12 @@ static int CheckFlag(ESP8266_StatusTypeDef status, int internalState) {
 	return internalState;
 }
 
-
-
+/*
+ * @brief Connect to gsm network.
+ * @param argument	task argument
+ * @return void
+ */
 void connectGSMTask(void *argument) {
-	//driver_uart_t * uart = (driver_uart_t *)argument;
-
 
 	BG96_StatusTypeDef Status;
 	int internalState = 1;
@@ -685,20 +700,16 @@ void connectGSMTask(void *argument) {
 			internalState = 0;
 			indice = 0;
 		}
-		//xSemaphoreTake(xSemaphoreButton, portMAX_DELAY);
 		switch (internalState) {
 		case 0:
 			modem_status = SysCtrl_BG96_power_off();
-			//xSemaphoreGive(mutex);
 			if (modem_status == SCSTATUS_OK) {
 				internalState++;
 			}
 
 			break;
 		case 1:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			modem_status = SysCtrl_BG96_power_on();
-			//xSemaphoreGive(mutex);
 			if (modem_status == SCSTATUS_OK) {
 				internalState++;
 				HAL_UART_F_Init(&huart2);
@@ -708,12 +719,10 @@ void connectGSMTask(void *argument) {
 
 			break;
 		case 2:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_ConnectTCP(BG96_COMMAND_INIT[indice].cmd,
 					strlen((char*) BG96_COMMAND_INIT[indice].cmd),
 					BG96_COMMAND_INIT[indice].response,
 					BG96_COMMAND_INIT[indice].cmd_timeout);
-			//xSemaphoreGive(mutex);
 			osDelay(100 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) {
 				indice++;
@@ -725,21 +734,17 @@ void connectGSMTask(void *argument) {
 			}
 			break;
 		case 3:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
-			modem_status = SysCtrl_BG96_sim_select(SC_MODEM_SIM_SOCKET_0); //SC_STM32_SIM_2//SC_MODEM_SIM_SOCKET_0//SC_MODEM_SIM_ESIM_1
-			//xSemaphoreGive(mutex);
+			modem_status = SysCtrl_BG96_sim_select(SC_MODEM_SIM_SOCKET_0);
 			(void) osDelay(100);  // waiting for 10ms after sim selection
 			if (modem_status == SCSTATUS_OK) {
 				internalState++;
 			}
 			break;
 		case 4:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_ConnectTCP(BG96_COMMAND_1[indice].cmd,
 					strlen((char*) BG96_COMMAND_1[indice].cmd),
 					BG96_COMMAND_1[indice].response,
 					BG96_COMMAND_1[indice].cmd_timeout);
-			//xSemaphoreGive(mutex);
 			osDelay(100 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) {
 				indice++;
@@ -760,12 +765,10 @@ void connectGSMTask(void *argument) {
 			}
 			break;
 		case 5:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_ConnectTCP(BG96_COMMAND_2[indice].cmd,
 					strlen((char*) BG96_COMMAND_2[indice].cmd),
 					BG96_COMMAND_2[indice].response,
 					BG96_COMMAND_2[indice].cmd_timeout);
-			//xSemaphoreGive(mutex);
 			osDelay(200 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) { //get an error because the firmware is not up today but this command is needed
 				indice++;
@@ -778,12 +781,10 @@ void connectGSMTask(void *argument) {
 			}
 			break;
 		case 6:
-			///xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_ConnectTCP(BG96_COMMAND_3[indice].cmd,
 					strlen((char*) BG96_COMMAND_3[indice].cmd),
 					BG96_COMMAND_3[indice].response,
 					BG96_COMMAND_3[indice].cmd_timeout);
-			//xSemaphoreGive(mutex);
 			osDelay(100 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) {
 				indice++;
@@ -804,10 +805,8 @@ void connectGSMTask(void *argument) {
 			}
 			break;
 		case 7:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_MQTTOpen(host, port, tcpconnectID, vsn, cid,
 					clean_session, keepalive, sslenable);
-			//xSemaphoreGive(mutex);
 			osDelay(3000 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) {
 				internalState++;
@@ -816,22 +815,17 @@ void connectGSMTask(void *argument) {
 			}
 			break;
 		case 8:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_MQTTConnect(clientId, userName, password,
 					tcpconnectID);
-			//xSemaphoreGive(mutex);
 			osDelay(3000 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) {
 				internalState++;
-				//internalState++;
 			} else {
 				osDelay(1000 / portTICK_PERIOD_MS);
 			}
 			break;
 		case 9:
-			//xSemaphoreTake(mutex, portMAX_DELAY);
 			Status = BG96_SubscribeTopic(tcpconnectID, 1, sub_topic, qos);
-			//xSemaphoreGive(mutex);
 			osDelay(5000 / portTICK_PERIOD_MS);
 			if (Status == BG96_OK) {
 				internalState++;
@@ -841,7 +835,6 @@ void connectGSMTask(void *argument) {
 			break;
 		case 10:
 			//publih task is created
-			//Atributes defined for connect wifi task
 			if (publishTaskcHandle == NULL) {
 				osThreadAttr_t publishTask_attributes = { .name =
 
@@ -859,7 +852,7 @@ void connectGSMTask(void *argument) {
 						;
 				}
 			}
-			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS); //taskENTER_CRITICAL(); //
+			xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
 			HAL_UART_F_Send(&huart1, AT_MECONNOK_STRING, strlen((char*)AT_MECONNOK_STRING));
 			xSemaphoreGive(mutex);
 			xSemaphoreTake(xSemaphoreGSM, portMAX_DELAY);
@@ -869,86 +862,49 @@ void connectGSMTask(void *argument) {
 
 			if (thread_status == osOK) {
 				publishTaskcHandle = NULL;
-				internalState++;           // Thread was terminated successfully
-			} else {
-				// Failed to terminate a thread
+				internalState++;
 			}
-
 			break;
 		case 11:
 			internalState++;
-//			Status = BG96_UnsubscribeTopic(tcpconnectID, 1, sub_topic);
-//			osDelay(100 / portTICK_PERIOD_MS);
-//			if (Status == BG96_OK) {
-//				internalState++;
-//			} else {
-//				osDelay(1000 / portTICK_PERIOD_MS);
-//			}
-
+			Status = BG96_UnsubscribeTopic(tcpconnectID, 1, sub_topic);
+			osDelay(100 / portTICK_PERIOD_MS);
+			if (Status == BG96_OK) {
+				internalState++;
+			} else {
+				osDelay(1000 / portTICK_PERIOD_MS);
+			}
 			break;
 		case 12:
 			internalState++;
-//			Status = BG96_Disconnect(tcpconnectID);
-//			osDelay(100 / portTICK_PERIOD_MS);
-//			if (Status == BG96_OK) {
-//				internalState++;
-//			} else {
-//				osDelay(1000 / portTICK_PERIOD_MS);
-//			}
-
+			Status = BG96_Disconnect(tcpconnectID);
+			osDelay(100 / portTICK_PERIOD_MS);
+			if (Status == BG96_OK) {
+				internalState++;
+			} else {
+				osDelay(1000 / portTICK_PERIOD_MS);
+			}
 			break;
 		case 13:
 			internalState = 0;
-			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
-			HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
 			xSemaphoreTake(xSemaphoreGSM, portMAX_DELAY);
 			printf("Conectando a red GSM, Espere por favor.. \r\n");
-//			if (connectWifiTaskcHandle == NULL) {
-//				osThreadAttr_t connectWifi_attributes = { .name =
-//
-//				"connectWifi", .stack_mem = &connectWifiTaskBuffer[0],
-//						.stack_size = sizeof(connectWifiTaskBuffer), .cb_mem =
-//								&connectWifiTaskControlBlock, .cb_size =
-//								sizeof(connectWifiTaskControlBlock), .priority =
-//								(osPriority_t) osPriorityAboveNormal, };
-//
-//				connectWifiTaskcHandle = osThreadNew(connectWifiTask, NULL,
-//						&connectWifi_attributes);
-//				if (connectWifiTaskcHandle == NULL) {
-//					printf("error creacion de tarea\r\n");
-//					while (1)
-//						;
-//				}
-//				connection_state = WIFI;   // Thread was terminated successfully
-//			}
-
-//			Status = BG96_Close(tcpconnectID);
-//			osDelay(100 / portTICK_PERIOD_MS);
-//			if (Status == BG96_OK) {
-//						internalState++;
-//			} else {
-//				osDelay(1000 / portTICK_PERIOD_MS);
-//			}
-
 			break;
 		default:
 			break;
 		}
-
 		vTaskDelay(1 / portTICK_PERIOD_MS);
 
-		//if (connection_state == WIFI)	//terminate tas
-		//	break;
 	}
-//	internalState = 0;
-//	osStatus_t connectthread_status;
-//	connectthread_status = osThreadTerminate(connectGSMTaskcHandle);
-//	if (connectthread_status == osOK) {
-//		HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
-//		HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
-//	}
 }
 
+/*
+ * @brief Connect to wifi network.
+ * @param argument	task argument
+ * @return void
+ */
 void connectWifiTask(void *argument) {
 	ESP8266_StatusTypeDef Status;
 	static int internalState = 0;
@@ -959,50 +915,37 @@ void connectWifiTask(void *argument) {
 
 		switch (internalState) {
 		case 0:
-
 			Status = ESP_ConnectWifi(true, (char*)wifi_username, (char*)wifi_password);
-
 			internalState = CheckFlag(Status, internalState);
-
 			break;
 		case 1:
 			// Wait 1sec.
 			Status = ESP_Delay(1000);
-			//osDelay(1000 / portTICK_PERIOD_MS);
 			internalState++;
-
 			break;
 		case 2:
 			// Check the wifi connection status.
 			Status = ESP_IsConnectedWifi();
-
-			//internalState = CheckFlag(Status, internalState);
 			internalState++;
 			break;
 		case 3:
 			// Start TCP connection.
 			Status = ESP_StartTCP((char*) host, port, keepalive, sslenable);
-
-			//osDelay(500 / portTICK_PERIOD_MS);
 			internalState = CheckFlag(Status, internalState);
 			break;
 		case 4:
 			// Send the mqtt data.
 			Status = mqtt_Connect(clientId, userName, password);
-
 			internalState = CheckFlag(Status, internalState);
-
 			break;
 		case 5:
 			Status = mqtt_SubscriberPacket(sub_topic,
 					strlen((char*) sub_topic));
-
 			internalState = CheckFlag(Status, internalState);
-
 			osDelay(3000 / portTICK_PERIOD_MS);
-			//internalState++;
 			break;
 		case 6:
+			/* Create Publish Task*/
 			if (publishTaskcHandle == NULL) {
 				osThreadAttr_t publishTask_attributes = { .name = "publish",
 						.stack_mem = &publishTaskBuffer[0], .stack_size =
@@ -1019,8 +962,27 @@ void connectWifiTask(void *argument) {
 						;
 				}
 			}
+
+			/* Create keepAlive Task*/
+			if (keepAliveTaskcHandle == NULL) {
+				osThreadAttr_t keepAliveTask_attributes = { .name = "keepAlive",
+						.stack_mem = &keepAliveTaskBuffer[0], .stack_size =
+								sizeof(keepAliveTaskBuffer), .cb_mem =
+										&keepAliveTaskControlBlock, .cb_size =
+												sizeof(keepAliveTaskControlBlock), .priority =
+														(osPriority_t) osPriorityNormal, };
+
+				keepAliveTaskcHandle = osThreadNew(keepAliveTask, NULL,
+						&keepAliveTask_attributes);
+				if (keepAliveTaskcHandle == NULL) {
+					printf("error creacion de tarea\r\n");
+					while (1)
+						;
+				}
+			}
+
+			/* Create Subscribe Task*/
 			if (xQeueSubData != NULL) {
-				//Atributes defined for connect wifi task
 				osThreadAttr_t subscribeTask_attributes = { .name =
 						"subscribe", .stack_mem = &subscribeTaskBuffer[0],
 						.stack_size = sizeof(subscribeTaskBuffer), .cb_mem =
@@ -1046,19 +1008,18 @@ void connectWifiTask(void *argument) {
 
 			xSemaphoreTake(xSemaphoreWIFI, portMAX_DELAY);
 			//delete task
-			osStatus_t thread_status_pub, thread_status_sub;
+			osStatus_t thread_status_pub, thread_status_sub, thread_status_keepAlive;
 			thread_status_pub = osThreadTerminate(publishTaskcHandle);
 			thread_status_sub = osThreadTerminate(subscribeTaskcHandle);
+			thread_status_keepAlive = osThreadTerminate(keepAliveTaskcHandle);
 
-			if (thread_status_pub == osOK && thread_status_sub == osOK) {
+			if (thread_status_pub == osOK && thread_status_sub == osOK && thread_status_keepAlive == osOK) {
 				publishTaskcHandle = NULL;
 				subscribeTaskcHandle = NULL;
+				keepAliveTaskcHandle = NULL;
 				internalState++;           // Thread was terminated successfully
-			} else {
-				// Failed to terminate a thread
 			}
 			break;
-
 		case 8:
 			internalState = 0;
 			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
@@ -1074,19 +1035,14 @@ void connectWifiTask(void *argument) {
 			break;
 		}
 		osDelay(1 / portTICK_PERIOD_MS);
-//		if (connection_state == GSM)	//terminate tas
-//			break;
 	}
-//	internalState = 0;
-//	osStatus_t connectthread_status;
-//	connectthread_status = osThreadTerminate(connectGSMTaskcHandle);
-//	if (connectthread_status == osOK) {
-//		HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
-//		HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, GPIO_PIN_RESET);//turn off led to indicate desconnection
-//	}
-
 }
 
+/*
+ * @brief Publish message to the mqtt topic.
+ * @param argument	task argument
+ * @return void
+ */
 void publishTask(void *argument) {
 	BG96_StatusTypeDef Status;
 	ESP8266_StatusTypeDef Status_Wifi;
@@ -1095,13 +1051,10 @@ void publishTask(void *argument) {
 
 	HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
 	for (;;) {
-		//memset(pub_data, '\0', BUFFERSIZE_CMD);
-
 		xQueueReceive(xQeuePubData, &dataPub, portMAX_DELAY);
 
 		switch (connection_state) {
 		case GSM:
-
 
 			//AGREGAR EL CTRL(z) PASCUAL
 
@@ -1111,50 +1064,47 @@ void publishTask(void *argument) {
 					pub_topic, dataPub.data, strlen((char*)dataPub.data));
 			break;
 		case WIFI:
-			//sprintf((char*) pub_data, "Contador: %d%c%c", contador, '\r', '\n');
 			xSemaphoreTake(xSemaphoreMutexUart, 20000);
 			Status_Wifi = mqtt_Publisher(pub_topic, dataPub.data, dataPub.length);
 			xSemaphoreGive(xSemaphoreMutexUart);
 			break;
 		}
 		contador++;
-//		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
-//		HAL_UART_F_Send(&huart1, AT_OK_STRING, strlen((char*)AT_OK_STRING));
-//		xSemaphoreGive(mutex);
 		osDelay(10 / portTICK_PERIOD_MS);
-
 	}
 }
 
+/*
+ * @brief Send ping packet to the broker mqtt to keep alive connection.
+ * @param argument	task argument
+ * @return void
+ */
+void keepAliveTask(void *argument) {
+	ESP8266_StatusTypeDef Status_Wifi;
+	for (;;) {
+		Status_Wifi = mqtt_keepAlive();
+		vTaskDelay(10000 / portTICK_PERIOD_MS);
+	}
+}
+
+/*
+ * @brief Receive message to the mqtt topic and retransmit it to the ME1040.
+ * @param argument	task argument
+ * @return void
+ */
 void subscribeTask(void *argument) {
-	//ESP8266_StatusTypeDef Status;
-	//uint32_t RetLength = 0;
 	data_publish_t dataSub;
-	uint8_t contador = 0;
 	for (;;) {
 		memset((char*)dataSub.data, '\0', sizeof(dataSub.data));
 		xQueueReceive(xQeueSubData, &dataSub, portMAX_DELAY);
 
 		xSemaphoreTake(mutex, 300 / portTICK_PERIOD_MS);
-		//HAL_UART_Transmit(&huart1, (uint8_t*)&dataSub.data[0], dataSub.length, 1000);
 		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
 		osDelay(100 / portTICK_PERIOD_MS);
 		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
 		osDelay(100 / portTICK_PERIOD_MS);
 		HAL_UART_F_Send(&huart1, (char*)&dataSub.data[0], dataSub.length);
 		xSemaphoreGive(mutex);
-		contador++;
-
-
-//		xSemaphoreTake(xSemaphoreMutexUart, 20000);
-//		Status = mqtt_SubscriberReceive(sub_data, BUFFERSIZE_CMD, &RetLength); //dataSub.topic, dataSub.data, &dataSub.length);
-//		xSemaphoreGive(xSemaphoreMutexUart);
-//		if (Status == ESP8266_OK) {
-//			if (RetLength != 0) {
-//				sub_data[RetLength] = '\0';
-//				xQueueSend(xQueuePrintConsole, &sub_data, portMAX_DELAY);
-//			}
-//		}
 		vTaskDelay(250 / portTICK_PERIOD_MS);
 	}
 }
@@ -1164,18 +1114,4 @@ static void clean_Timer(TimerHandle_t *timerT) {
 	Timer_Stop(timerT);
 }
 
-void buttonsTask(void *argument) {
-	fsmButtonInit(&button_down);
-	for (;;) {
-		//update FSM button
-		fsmButtonUpdate(&button_down);
 
-		if (button_down.released) {
-			xSemaphoreGive(xSemaphoreButton);
-
-		}
-
-		vTaskDelay(1 / portTICK_PERIOD_MS);
-
-	}
-}

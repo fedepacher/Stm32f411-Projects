@@ -15,7 +15,6 @@
 
 #define TRIAL_CONNECTION_TIME	5
 
-//int32_t transport_socket;
 
 ESP8266_StatusTypeDef mqtt_Connect( uint8_t * clientId,  uint8_t * userName,  uint8_t * password) {
 	int32_t length;
@@ -91,6 +90,17 @@ ESP8266_StatusTypeDef mqtt_Connect( uint8_t * clientId,  uint8_t * userName,  ui
 	return Status;
 }
 
+ESP8266_StatusTypeDef mqtt_keepAlive(){
+	unsigned char buffer[BUFFERSIZE_CMD];
+	int32_t length;
+	ESP8266_StatusTypeDef Status = ESP8266_OK;
+
+	length = MQTTSerialize_pingreq(buffer, sizeof(buffer));
+	Status = ESP_SendData(buffer, length);
+
+	return Status;
+}
+
 ESP8266_StatusTypeDef mqtt_Publisher(uint8_t *topic, uint8_t *data,
 		uint32_t dataLength) {
 	unsigned char buffer[BUFFERSIZE_CMD];
@@ -152,13 +162,6 @@ ESP8266_StatusTypeDef mqtt_Subscriber() {
 	// Send SUBSCRIBE to the mqtt broker.
 	Status = ESP_SendData(buffer, length);
 
-	//envio a otro topic
-	/*memset(buffer, '\0', sizeof(buffer));
-	 topicFilters[0].cstring = "test/rgb1";
-	 length = MQTTSerialize_subscribe(buffer, sizeof(buffer), 0, 1, 1,
-	 topicFilters, requestedQoSs);
-	 Status = ESP8266_SendData(buffer, length);*/
-
 	uint32_t RetLength;
 	uint8_t *dato;
 	if (Status == ESP8266_OK) {
@@ -182,12 +185,12 @@ ESP8266_StatusTypeDef mqtt_SubscriberPacket(uint8_t *topic, uint8_t topic_length
 	int32_t trial = 0;
 	int32_t internalState = 0;
 	uint16_t subcribe_MsgID;
-	int32_t requestQoS, subcribeCount, granted_QoS;
+	int32_t  subcribeCount, granted_QoS;
 
 	// Populate the subscribe message.
 	MQTTString topicFilters[1] = { MQTTString_initializer };
 	//strncpy((char*)topicFilters[0].cstring, (char*)topic, topic_length);
-	topicFilters[0].cstring = topic;			//"test/rgb";
+	topicFilters[0].cstring = (char*)topic;
 	int requestedQoSs[1] = { 0 };
 	memset((char*) buffer, '\0', BUFFERSIZE_CMD);
 	length = MQTTSerialize_subscribe(buffer, BUFFERSIZE_CMD, 0, 1, 1,

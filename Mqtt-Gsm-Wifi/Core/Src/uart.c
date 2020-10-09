@@ -97,7 +97,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	#if WRITE_CHAR
 		xQueueSendFromISR(xQueuePrintConsole, &dato, &xHigherPriorityTaskWoken);
 	#else
-		if(indice < BUFFERSIZE_CMD){		//MENOS 1 PORQUE QUIERO ARGREGARLE AL FINAL EL \0
+		if(indice < BUFFERSIZE_CMD){
 			data.data_cmd[indice++] = dato;
 		}
 		else{
@@ -131,7 +131,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 				if(dato == '{' || dato == '$'){
 					start_store_pub = 1;
 					data_publish_rx.length = 0;
-					if(data_publish_rx.length < sizeof(data_publish_rx.data)){
+					if(data_publish_rx.length < sizeof(data_publish_rx.data) && dato != '{'){
 							data_publish_rx.data[data_publish_rx.length++] = dato;
 					}
 				}
@@ -146,7 +146,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					start_store_pub = 0;
 					recep_ast_pub = 0;
 					count_crc_pub = 0;
-					data_publish_rx.data[data_publish_rx.length++] = dato;
+					if(dato != '}')
+						data_publish_rx.data[data_publish_rx.length++] = dato;
 					if(xQeuePubData != NULL && data_publish_rx.length < sizeof(data_publish_rx.data)){
 						strncpy((char*)data_publish_tx.data, (char*)data_publish_rx.data, data_publish_rx.length - 1);
 						data_publish_tx.length = data_publish_rx.length - 1;

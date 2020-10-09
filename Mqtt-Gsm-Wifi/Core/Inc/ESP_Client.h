@@ -16,16 +16,6 @@
 #define DEBUG			1
 #define WRITE_CHAR		0
 
-
-// Strings definitions.
-//#define AT_OK_STRING            "OK\r\n"
-//#define AT_IPD_OK_STRING        "OK\r\n\r\n"
-//#define AT_SEND_OK_STRING       "SEND OK\r\n"
-//#define AT_SEND_PROMPT_STRING   "OK\r\n>"
-//#define AT_ERROR_STRING         "ERROR\r\n"
-//#define AT_IPD_STRING           "+IPD,"
-
-
 // Buffer settings.
 #define ESP_BUFFERSIZE_CIRCULAR 	2048UL
 #define ESP_BUFFERSIZE_RESPONSE 	1500UL

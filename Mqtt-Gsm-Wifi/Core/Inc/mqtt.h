@@ -63,4 +63,11 @@ ESP8266_StatusTypeDef mqtt_SubscriberPacket(uint8_t *topic, uint8_t topic_length
  */
 ESP8266_StatusTypeDef mqtt_SubscriberReceive(uint8_t *data, uint32_t data_length, uint32_t* Retlength);//char topic[], char *pData, uint32_t *length);
 
+/*
+ * @brief Send ping packet to the broker mqtt to keep alive connection.
+ * @return ESP8266_OK if it is ok otherwise ESP8266_ERROR
+ */
+ESP8266_StatusTypeDef mqtt_keepAlive();
+
+
 #endif /* INC_MQTT_H_ */

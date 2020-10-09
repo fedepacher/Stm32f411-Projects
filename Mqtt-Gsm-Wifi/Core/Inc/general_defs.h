@@ -45,10 +45,6 @@
 #define BUFFERSIZE_CMD 			256UL
 
 // Timing settings.
-//#define TIMEOUT_MS_RESTART       2000UL///< Module restart timeout.
-//#define DEFAULT_TIME_OUT         5000UL /* in ms */
-//#define LONG_TIME_OUT         	20000UL /* in ms */
-
 #define KEEPALIVE_MAX			3600
 
 //CMD maximun timeout

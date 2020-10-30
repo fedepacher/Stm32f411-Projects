@@ -234,11 +234,21 @@ BG96_StatusTypeDef BG96_MQTTConnect(const uint8_t * clientId, const uint8_t * us
 	switch (internalState) {
 		case BG96_State0:
 
-			sprintf((char *)cmdBuffer, "AT+QMTCONN=%u,\"%s\",\"%s\",\"%s\"%c%c%c",tcpconnectID, clientId, userName, password,'\r', '\n', '\0');
+			sprintf((char *)cmdBuffer, "AT+QMTCONN=?%c%c%c",'\r', '\n', '\0');
 
 			internalState = BG96_State1;
 
 		case BG96_State1:
+			if(BG96_OK == (result = BG96_atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) QMTCONN_STRING, CMD_TIMEOUT_15000))){
+				internalState = BG96_State2;
+			}
+		case BG96_State2:
+
+			sprintf((char *)cmdBuffer, "AT+QMTCONN=%u,\"%s\",\"%s\",\"%s\"%c%c%c",tcpconnectID, clientId, userName, password,'\r', '\n', '\0');
+
+			internalState = BG96_State3;
+
+		case BG96_State3:
 			if(BG96_OK == (result = BG96_atCommand((uint8_t*)cmdBuffer, strlen((char*)cmdBuffer), (uint8_t*) QMTCONN_STRING, CMD_TIMEOUT_15000))){
 				internalState = BG96_State0;
 				return result;

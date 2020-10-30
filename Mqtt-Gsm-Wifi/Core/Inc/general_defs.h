@@ -11,7 +11,7 @@
 
 #define DEBUG					1
 #define WRITE_CHAR				0
-#define ME_CONSOLE				1
+#define ME_CONSOLE				0
 
 #define END_OF_ARRAY			"EOA"
 
